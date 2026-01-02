@@ -1,0 +1,39 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+--
+-- Formatrix TUI - Terminal interface for Formatrix Docs
+-- Ada GNAT Project File
+--
+-- Build: gprbuild -P formatrix_tui.gpr
+-- Run:   ./bin/formatrix_tui
+
+with "ncurses";
+
+project Formatrix_TUI is
+
+   for Source_Dirs use ("src", "src/ui", "src/editor", "src/bindings");
+   for Object_Dir use "obj";
+   for Exec_Dir use "bin";
+   for Main use ("formatrix_tui.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        ("-gnat2022",      -- Ada 2022 standard
+         "-gnatwa",        -- All warnings
+         "-gnatyy",        -- Style checks
+         "-gnato",         -- Overflow checks
+         "-gnatVa",        -- Validity checks
+         "-gnata",         -- Assertions enabled
+         "-g");            -- Debug info
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("Ada") use ("-E"); -- Exception traceback
+   end Binder;
+
+   package Linker is
+      for Default_Switches ("Ada") use
+        ("-lformatrix_core",  -- Link to Rust core (C FFI)
+         "-L../target/release");
+   end Linker;
+
+end Formatrix_TUI;

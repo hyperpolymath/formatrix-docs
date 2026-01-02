@@ -1,0 +1,16 @@
+target/
+/target/
+.cache/
+node_modules/
+ui/dist/
+ui/lib/
+tui/obj/
+tui/bin/
+*.pyc
+__pycache__/
+.DS_Store
+*.swp
+*.swo
+*~
+.env
+.env.local

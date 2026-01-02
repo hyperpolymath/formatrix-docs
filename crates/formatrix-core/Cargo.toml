@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[package]
+name = "formatrix-core"
+description = "Unified document AST and format converters for Formatrix Docs"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dependencies]
+# Format parsers
+comrak.workspace = true
+jotdown.workspace = true
+orgize.workspace = true
+rst_parser.workspace = true
+document_tree.workspace = true
+typst-syntax.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+thiserror.workspace = true
+
+# Utilities
+unicode-segmentation.workspace = true
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+proptest = "1.5"
+
+[features]
+default = ["markdown", "djot", "orgmode", "rst", "typst"]
+markdown = []
+djot = []
+orgmode = []
+rst = []
+typst = []
+ffi = []  # Enable C FFI for Ada TUI

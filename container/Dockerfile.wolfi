@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Formatrix Docs - Wolfi Container Image
+# Copyright (C) 2025 Jonathan D.A. Jewell
+
+# Stage 1: Build Rust components
+FROM cgr.dev/chainguard/wolfi-base AS rust-builder
+
+RUN apk add --no-cache \
+    rust \
+    cargo \
+    openssl-dev \
+    pkgconf \
+    build-base
+
+WORKDIR /build
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+
+RUN cargo build --release -p formatrix-core -p formatrix-gui -p formatrix-db -p formatrix-pipeline
+
+# Stage 2: Build Ada TUI
+FROM cgr.dev/chainguard/wolfi-base AS ada-builder
+
+RUN apk add --no-cache \
+    gcc-gnat \
+    gprbuild \
+    ncurses-dev \
+    build-base
+
+WORKDIR /build
+COPY tui ./tui
+
+RUN cd tui && gprbuild -P formatrix_tui.gpr -XMODE=release
+
+# Stage 3: Runtime image
+FROM cgr.dev/chainguard/wolfi-base AS runtime
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    openssl \
+    ncurses \
+    gtk+3.0 \
+    webkit2gtk \
+    libsoup \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    espeak-ng \
+    hunspell \
+    hunspell-en-us \
+    pandoc \
+    ca-certificates
+
+# Copy built artifacts
+COPY --from=rust-builder /build/target/release/formatrix-gui /usr/local/bin/
+COPY --from=ada-builder /build/tui/bin/formatrix-tui /usr/local/bin/
+
+# Copy UI assets
+COPY ui/dist /opt/formatrix-docs/ui
+
+# Create non-root user
+RUN adduser -D -h /home/formatrix formatrix
+USER formatrix
+WORKDIR /home/formatrix
+
+# Default to GUI mode
+ENV DISPLAY=:0
+ENTRYPOINT ["/usr/local/bin/formatrix-gui"]
+
+# Labels
+LABEL org.opencontainers.image.title="Formatrix Docs"
+LABEL org.opencontainers.image.description="Cross-platform document editor with format tabs"
+LABEL org.opencontainers.image.source="https://github.com/hyperpolymath/formatrix-docs"
+LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later"
+LABEL org.opencontainers.image.vendor="Hyperpolymath"

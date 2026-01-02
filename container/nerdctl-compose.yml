@@ -1,0 +1,96 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Formatrix Docs - nerdctl compose configuration
+# Copyright (C) 2025 Jonathan D.A. Jewell
+#
+# Usage:
+#   nerdctl compose up -d          # Start all services
+#   nerdctl compose up formatrix   # Start just the editor
+#   nerdctl compose logs -f        # View logs
+#   nerdctl compose down           # Stop all services
+
+services:
+  formatrix:
+    build:
+      context: ..
+      dockerfile: container/Dockerfile.wolfi
+    image: ghcr.io/hyperpolymath/formatrix-docs:latest
+    container_name: formatrix-docs
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}
+      - XDG_RUNTIME_DIR=/tmp
+      - FORMATRIX_DB_URL=http://arangodb:8529
+      - FORMATRIX_DB_NAME=formatrix
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ${XDG_RUNTIME_DIR:-/run/user/1000}:${XDG_RUNTIME_DIR:-/run/user/1000}:ro
+      - formatrix-data:/home/formatrix/.local/share/formatrix-docs
+      - ${HOME}/Documents:/home/formatrix/Documents:rw
+    depends_on:
+      - arangodb
+    networks:
+      - formatrix-net
+    restart: unless-stopped
+
+  formatrix-tui:
+    build:
+      context: ..
+      dockerfile: container/Dockerfile.wolfi
+    image: ghcr.io/hyperpolymath/formatrix-docs:latest
+    container_name: formatrix-tui
+    entrypoint: ["/usr/local/bin/formatrix-tui"]
+    environment:
+      - TERM=${TERM:-xterm-256color}
+      - FORMATRIX_DB_URL=http://arangodb:8529
+      - FORMATRIX_DB_NAME=formatrix
+    volumes:
+      - formatrix-data:/home/formatrix/.local/share/formatrix-docs
+      - ${HOME}/Documents:/home/formatrix/Documents:rw
+    depends_on:
+      - arangodb
+    networks:
+      - formatrix-net
+    stdin_open: true
+    tty: true
+    profiles:
+      - tui
+
+  arangodb:
+    image: arangodb/arangodb:3.12
+    container_name: formatrix-arangodb
+    environment:
+      - ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD:-formatrix}
+      - ARANGO_NO_AUTH=${ARANGO_NO_AUTH:-0}
+    volumes:
+      - arangodb-data:/var/lib/arangodb3
+      - arangodb-apps:/var/lib/arangodb3-apps
+    ports:
+      - "8529:8529"
+    networks:
+      - formatrix-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8529/_api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  vosk:
+    image: alphacep/kaldi-vosk-server:latest
+    container_name: formatrix-vosk
+    ports:
+      - "2700:2700"
+    networks:
+      - formatrix-net
+    profiles:
+      - speech
+    restart: unless-stopped
+
+networks:
+  formatrix-net:
+    driver: bridge
+
+volumes:
+  formatrix-data:
+  arangodb-data:
+  arangodb-apps:
