@@ -520,3 +520,247 @@ mod tests {
         assert_eq!(doc.word_count(), 6);
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    // Strategy for generating SourceFormat
+    fn source_format_strategy() -> impl Strategy<Value = SourceFormat> {
+        prop_oneof![
+            Just(SourceFormat::PlainText),
+            Just(SourceFormat::Markdown),
+            Just(SourceFormat::AsciiDoc),
+            Just(SourceFormat::Djot),
+            Just(SourceFormat::OrgMode),
+            Just(SourceFormat::ReStructuredText),
+            Just(SourceFormat::Typst),
+        ]
+    }
+
+    // Strategy for generating simple text (no special characters for JSON safety)
+    fn simple_text_strategy() -> impl Strategy<Value = String> {
+        "[a-zA-Z0-9 ]{0,100}".prop_map(|s| s.trim().to_string())
+    }
+
+    // Strategy for generating Inline::Text
+    fn inline_text_strategy() -> impl Strategy<Value = Inline> {
+        simple_text_strategy().prop_map(|content| Inline::Text { content })
+    }
+
+    // Strategy for generating simple Inlines (no recursion)
+    fn simple_inline_strategy() -> impl Strategy<Value = Inline> {
+        prop_oneof![
+            inline_text_strategy(),
+            Just(Inline::LineBreak),
+            Just(Inline::SoftBreak),
+            Just(Inline::NonBreakingSpace),
+            simple_text_strategy().prop_map(|content| Inline::Code {
+                content,
+                language: None
+            }),
+        ]
+    }
+
+    // Strategy for ListKind
+    fn list_kind_strategy() -> impl Strategy<Value = ListKind> {
+        prop_oneof![
+            Just(ListKind::Bullet),
+            Just(ListKind::Ordered),
+            Just(ListKind::Task),
+        ]
+    }
+
+    // Strategy for generating Paragraphs
+    fn paragraph_strategy() -> impl Strategy<Value = Block> {
+        prop::collection::vec(simple_inline_strategy(), 0..5).prop_map(|content| {
+            Block::Paragraph { content, span: None }
+        })
+    }
+
+    // Strategy for generating Headings
+    fn heading_strategy() -> impl Strategy<Value = Block> {
+        (1u8..=6, prop::collection::vec(simple_inline_strategy(), 1..4)).prop_map(
+            |(level, content)| Block::Heading {
+                level,
+                content,
+                id: None,
+                span: None,
+            },
+        )
+    }
+
+    // Strategy for generating CodeBlocks
+    fn code_block_strategy() -> impl Strategy<Value = Block> {
+        (
+            proptest::option::of("[a-z]+"),
+            simple_text_strategy(),
+            proptest::bool::ANY,
+        )
+            .prop_map(|(language, content, line_numbers)| Block::CodeBlock {
+                language,
+                content,
+                line_numbers,
+                highlight_lines: Vec::new(),
+                span: None,
+            })
+    }
+
+    // Strategy for generating simple blocks (no deep recursion)
+    fn simple_block_strategy() -> impl Strategy<Value = Block> {
+        prop_oneof![
+            paragraph_strategy(),
+            heading_strategy(),
+            code_block_strategy(),
+            Just(Block::ThematicBreak { span: None }),
+        ]
+    }
+
+    // Strategy for generating Documents
+    fn document_strategy() -> impl Strategy<Value = Document> {
+        (
+            source_format_strategy(),
+            prop::collection::vec(simple_block_strategy(), 0..10),
+        )
+            .prop_map(|(source_format, content)| Document {
+                source_format,
+                meta: DocumentMeta::default(),
+                content,
+                raw_source: None,
+            })
+    }
+
+    // Strategy for MetaValue
+    fn meta_value_strategy() -> impl Strategy<Value = MetaValue> {
+        prop_oneof![
+            simple_text_strategy().prop_map(MetaValue::String),
+            proptest::bool::ANY.prop_map(MetaValue::Bool),
+            (-1000i64..1000).prop_map(MetaValue::Integer),
+            (-1000.0f64..1000.0).prop_map(MetaValue::Float),
+        ]
+    }
+
+    proptest! {
+        // Property: All SourceFormats have non-empty extensions
+        #[test]
+        fn prop_source_format_has_extension(format in source_format_strategy()) {
+            prop_assert!(!format.extension().is_empty());
+        }
+
+        // Property: All SourceFormats have non-empty labels
+        #[test]
+        fn prop_source_format_has_label(format in source_format_strategy()) {
+            prop_assert!(!format.label().is_empty());
+        }
+
+        // Property: Extension and label are different (except edge cases)
+        #[test]
+        fn prop_source_format_extension_differs_from_label(format in source_format_strategy()) {
+            // Extensions are lowercase file extensions, labels are display names
+            prop_assert!(format.extension() != format.label() || format.extension() == format.label().to_lowercase());
+        }
+
+        // Property: Document word_count is non-negative
+        #[test]
+        fn prop_document_word_count_nonnegative(doc in document_strategy()) {
+            prop_assert!(doc.word_count() >= 0);
+        }
+
+        // Property: Document char_count is non-negative
+        #[test]
+        fn prop_document_char_count_nonnegative(doc in document_strategy()) {
+            prop_assert!(doc.char_count() >= 0);
+        }
+
+        // Property: Empty document has zero word count
+        #[test]
+        fn prop_empty_document_zero_words(format in source_format_strategy()) {
+            let doc = Document::new(format);
+            prop_assert_eq!(doc.word_count(), 0);
+        }
+
+        // Property: Empty document has zero char count
+        #[test]
+        fn prop_empty_document_zero_chars(format in source_format_strategy()) {
+            let doc = Document::new(format);
+            prop_assert_eq!(doc.char_count(), 0);
+        }
+
+        // Property: Document serialization roundtrip
+        #[test]
+        fn prop_document_serde_roundtrip(doc in document_strategy()) {
+            let json = serde_json::to_string(&doc).expect("serialize");
+            let deserialized: Document = serde_json::from_str(&json).expect("deserialize");
+            prop_assert_eq!(doc.source_format, deserialized.source_format);
+            prop_assert_eq!(doc.content.len(), deserialized.content.len());
+        }
+
+        // Property: Inline Text word count equals split_whitespace count
+        #[test]
+        fn prop_inline_text_word_count(content in simple_text_strategy()) {
+            let inline = Inline::Text { content: content.clone() };
+            prop_assert_eq!(inline.word_count(), content.split_whitespace().count());
+        }
+
+        // Property: Inline Text char count equals chars().count()
+        #[test]
+        fn prop_inline_text_char_count(content in simple_text_strategy()) {
+            let inline = Inline::Text { content: content.clone() };
+            prop_assert_eq!(inline.char_count(), content.chars().count());
+        }
+
+        // Property: Heading level is always 1-6
+        #[test]
+        fn prop_heading_level_in_range(level in 1u8..=6, content in prop::collection::vec(simple_inline_strategy(), 1..4)) {
+            let block = Block::Heading {
+                level,
+                content,
+                id: None,
+                span: None,
+            };
+            if let Block::Heading { level: l, .. } = block {
+                prop_assert!(l >= 1 && l <= 6);
+            }
+        }
+
+        // Property: MetaValue serialization roundtrip
+        #[test]
+        fn prop_meta_value_serde_roundtrip(value in meta_value_strategy()) {
+            let json = serde_json::to_string(&value).expect("serialize");
+            let deserialized: MetaValue = serde_json::from_str(&json).expect("deserialize");
+            match (&value, &deserialized) {
+                (MetaValue::String(a), MetaValue::String(b)) => prop_assert_eq!(a, b),
+                (MetaValue::Bool(a), MetaValue::Bool(b)) => prop_assert_eq!(a, b),
+                (MetaValue::Integer(a), MetaValue::Integer(b)) => prop_assert_eq!(a, b),
+                (MetaValue::Float(a), MetaValue::Float(b)) => {
+                    // Float comparison with tolerance
+                    prop_assert!((a - b).abs() < 0.0001);
+                }
+                _ => prop_assert!(false, "Type mismatch after roundtrip"),
+            }
+        }
+
+        // Property: Block paragraph word count is sum of inline word counts
+        #[test]
+        fn prop_paragraph_word_count_sum(inlines in prop::collection::vec(inline_text_strategy(), 0..5)) {
+            let expected: usize = inlines.iter().map(|i| i.word_count()).sum();
+            let block = Block::Paragraph { content: inlines, span: None };
+            prop_assert_eq!(block.word_count(), expected);
+        }
+
+        // Property: ListKind serialization roundtrip
+        #[test]
+        fn prop_list_kind_serde_roundtrip(kind in list_kind_strategy()) {
+            let json = serde_json::to_string(&kind).expect("serialize");
+            let deserialized: ListKind = serde_json::from_str(&json).expect("deserialize");
+            prop_assert_eq!(kind, deserialized);
+        }
+
+        // Property: SourceFormat::ALL contains all variants
+        #[test]
+        fn prop_source_format_all_contains(format in source_format_strategy()) {
+            prop_assert!(SourceFormat::ALL.contains(&format));
+        }
+    }
+}

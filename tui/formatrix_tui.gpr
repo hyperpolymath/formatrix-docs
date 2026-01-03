@@ -26,6 +26,15 @@ project Formatrix_TUI is
          "-g");            -- Debug info
    end Compiler;
 
+   --  SPARK verification settings
+   package Prove is
+      for Proof_Switches ("Ada") use
+        ("--level=2",            -- Medium proof level
+         "--timeout=30",         -- 30 second timeout per VC
+         "--prover=all",         -- Use all available provers
+         "--warnings=continue"); -- Continue on warnings
+   end Prove;
+
    package Binder is
       for Default_Switches ("Ada") use ("-E"); -- Exception traceback
    end Binder;

@@ -9,71 +9,100 @@ use sha2::{Sha256, Digest};
 // FD-M12: Document event emission
 // =============================================================================
 
+/// SEAM-1A: Document event types matching Protocol.res
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum DocumentEvent {
     Created {
+        id: String,
         hash: String,
         path: String,
         format: String,
         timestamp: f64,
+        source: String,
     },
     Modified {
+        id: String,
         hash: String,
         old_hash: String,
         path: String,
         format: String,
         timestamp: f64,
+        source: String,
     },
     Deleted {
+        id: String,
         hash: String,
         path: String,
         timestamp: f64,
+        source: String,
     },
     Converted {
+        id: String,
         source_hash: String,
         target_hash: String,
         from_format: String,
         to_format: String,
         timestamp: f64,
+        source: String,
     },
 }
 
+/// Source identifier for document events
+const EVENT_SOURCE: &str = "formatrix-docs";
+
 impl DocumentEvent {
+    /// Generate unique event ID
+    fn generate_id() -> String {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+        let ts = current_timestamp() as u64;
+        format!("fd-{}-{}", ts, count)
+    }
+
     pub fn created(content: &str, path: &str, format: &str) -> Self {
         DocumentEvent::Created {
+            id: Self::generate_id(),
             hash: hash_content(content),
             path: path.to_string(),
             format: format.to_string(),
             timestamp: current_timestamp(),
+            source: EVENT_SOURCE.to_string(),
         }
     }
 
     pub fn modified(content: &str, old_content: &str, path: &str, format: &str) -> Self {
         DocumentEvent::Modified {
+            id: Self::generate_id(),
             hash: hash_content(content),
             old_hash: hash_content(old_content),
             path: path.to_string(),
             format: format.to_string(),
             timestamp: current_timestamp(),
+            source: EVENT_SOURCE.to_string(),
         }
     }
 
     pub fn deleted(content: &str, path: &str) -> Self {
         DocumentEvent::Deleted {
+            id: Self::generate_id(),
             hash: hash_content(content),
             path: path.to_string(),
             timestamp: current_timestamp(),
+            source: EVENT_SOURCE.to_string(),
         }
     }
 
-    pub fn converted(source: &str, target: &str, from: &str, to: &str) -> Self {
+    pub fn converted(source_content: &str, target_content: &str, from: &str, to: &str) -> Self {
         DocumentEvent::Converted {
-            source_hash: hash_content(source),
-            target_hash: hash_content(target),
+            id: Self::generate_id(),
+            source_hash: hash_content(source_content),
+            target_hash: hash_content(target_content),
             from_format: from.to_string(),
             to_format: to.to_string(),
             timestamp: current_timestamp(),
+            source: EVENT_SOURCE.to_string(),
         }
     }
 }

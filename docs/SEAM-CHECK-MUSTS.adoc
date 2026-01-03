@@ -1,0 +1,370 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Seam Check Report: MUST Requirements
+:author: Claude Code
+:revdate: 2025-01-03
+:toc:
+:toclevels: 3
+
+== Overview
+
+This document validates integration seams between ecosystem components after implementing all MUST requirements.
+
+== Components Checked
+
+[cols="1,2,1"]
+|===
+| Component | Repository | Status
+
+| Formatrix Docs | formatrix-docs | ✓ Implemented
+| Recon-Silly-Ation | recon-silly-ation | ✓ Implemented
+| Docubot | recon-silly-ation/Docubot.res | ✓ Implemented
+| Docudactyl | recon-silly-ation/Docudactyl.res | ✓ Implemented
+|===
+
+== SEAM-1: Formatrix ↔ RSA
+
+=== SEAM-1A: Document Event Protocol
+
+[cols="2,2,1"]
+|===
+| Rust (commands.rs) | ReScript (Protocol.res) | Status
+
+| `DocumentEvent::Created { hash, path, format, timestamp }` | `documentEvent { id, eventType: Created, hash, path, format, timestamp, source }` | ⚠️ GAP
+| `DocumentEvent::Modified { hash, old_hash, path, format, timestamp }` | Uses `oldHash: option<string>` | ✓ ALIGNED
+| `DocumentEvent::Deleted { hash, path, timestamp }` | Same structure | ✓ ALIGNED
+| `DocumentEvent::Converted { source_hash, target_hash, from_format, to_format }` | Same structure | ✓ ALIGNED
+|===
+
+==== Gap: Missing `id` and `source` fields in Rust
+
+The Rust `DocumentEvent` lacks `id` and `source` fields that Protocol.res expects.
+
+**Resolution Required:** Add `id` and `source` fields to Rust `DocumentEvent` enum.
+
+=== SEAM-1B: Format Detection
+
+[cols="2,2,1"]
+|===
+| Rust (ffi.rs) | ReScript Usage | Status
+
+| `FfiFormat` enum (7 variants) | `Protocol.documentAst.format: string` | ⚠️ GAP
+|===
+
+==== Gap: Format Type Mismatch
+
+Rust uses enum `FfiFormat`, Protocol uses plain strings. Need mapping layer.
+
+**Resolution:** Use string representation in Protocol.res as-is; add format string constants.
+
+=== SEAM-1C: AST Interchange
+
+[cols="2,2,1"]
+|===
+| Rust (ast.rs) | ReScript (Protocol.res) | Status
+
+| `Document` struct | `documentAst` type | ⚠️ NEEDS BRIDGE
+| `Block` enum | `blockElement` type | ✓ ALIGNED (conceptually)
+| `Inline` enum | `inlineElement` type | ✓ ALIGNED (conceptually)
+|===
+
+==== Note: Bridge Implementation
+
+Direct AST interchange requires serialization/deserialization. Current implementation uses JSON as bridge format.
+
+=== SEAM-1D: Hash Consistency
+
+[cols="2,2,1"]
+|===
+| Rust (commands.rs) | ReScript (Protocol.res) | Status
+
+| SHA-256 via `sha2` crate | `hashAlgorithm = "sha256"` constant | ✓ ALIGNED
+|===
+
+== SEAM-2: RSA ↔ Docubot
+
+=== SEAM-2A: Generation Request Protocol
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docubot.res | Status
+
+| `generationRequest { requestId, documentType, format, context, priority }` | Uses own `documentType` enum, `format` enum | ⚠️ GAP
+| `repoContext { name, description, language, license, topics, existingDocs }` | `repoContext { name, description, language, license, topics, existingDocs, dependencies, readme }` | ⚠️ GAP
+|===
+
+==== Gap: repoContext Field Mismatch
+
+Docubot.res has additional `dependencies` and `readme` fields.
+
+**Resolution:** Update Protocol.res to include optional `dependencies` and `readme` fields.
+
+=== SEAM-2B: Generation Response / Approval
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docubot.res | Status
+
+| `generationResponse.requiresApproval` | `generationResult.requiresApproval` | ✓ ALIGNED
+| `generationResponse.auditId` | `generationResult.auditId` | ✓ ALIGNED
+| `generationResponse.confidence` | `generationResult.confidence` | ✓ ALIGNED
+| `approvalRequest`, `approvalResponse` | `approveGeneration()`, `rejectGeneration()` | ✓ ALIGNED
+|===
+
+=== SEAM-2C: Audit Events
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docubot.res | Status
+
+| `auditEventType` enum | `auditEntry { approvalStatus: string }` | ⚠️ GAP
+|===
+
+==== Gap: Audit Event Type Representation
+
+Protocol.res uses a discriminated union, Docubot.res uses strings.
+
+**Resolution:** Add string→enum mapping or standardize on strings.
+
+== SEAM-3: RSA ↔ Docudactyl
+
+=== SEAM-3A: Pipeline Trigger Protocol
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docudactyl.res | Status
+
+| `pipelineTrigger { triggerId, pipelineId, params }` | `executePipeline()` with inline params | ✓ ALIGNED (conceptually)
+| `pipelineAck { triggerId, executionId, accepted }` | Returns `result<pipelineExecution, string>` | ✓ ALIGNED
+|===
+
+=== SEAM-3B: Status Reporting
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docudactyl.res | Status
+
+| `pipelineStatus` enum (5 variants) | `pipelineExecution.status: string` | ⚠️ GAP
+| `stepStatus` enum (5 variants) | `stepStatus` type (5 variants) | ✓ ALIGNED
+| `statusReport { progress: float }` | `pipelineExecution` lacks progress | ⚠️ GAP
+|===
+
+==== Gap: Progress Tracking
+
+Protocol.res expects `progress: float` (0.0-1.0), Docudactyl.res doesn't track it.
+
+**Resolution:** Add `progress` field to `pipelineExecution` or calculate from step statuses.
+
+=== SEAM-3C: Enforcement Results
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docudactyl.res | Status
+
+| `enforcementViolation { id, ruleId, severity, ... }` | Step returns `result<unit, string>` only | ⚠️ GAP
+|===
+
+==== Gap: Rich Enforcement Results
+
+Protocol.res expects detailed violation objects, Docudactyl only returns error strings.
+
+**Resolution:** Implement proper enforcement violation type in Docudactyl.
+
+=== SEAM-3D: Pack Shipping
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docudactyl.res | Status
+
+| `shippingDestination` union (4 variants) | `Ship({ destination: string })` step type | ⚠️ GAP
+| `packShipmentResult { shipmentId, documentCount, ... }` | Not implemented | ⚠️ GAP
+|===
+
+==== Gap: Shipping Result Details
+
+Protocol.res expects detailed shipping results, Docudactyl uses simple string.
+
+**Resolution:** Add shipping result types to Docudactyl.
+
+== SEAM-4: Docubot ↔ Docudactyl
+
+=== SEAM-4A: Generation Scheduling
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Both Components | Status
+
+| `generationSchedule { scheduleId, interval, ... }` | Docudactyl has `scheduledTask` | ✓ ALIGNED (conceptually)
+|===
+
+=== SEAM-4B: Approval Workflow Routing
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docubot.res | Status
+
+| `approvalWorkflow { approvers, requiredApprovals, currentApprovals }` | Uses single approver model | ⚠️ GAP
+|===
+
+==== Gap: Multi-Approver Workflow
+
+Protocol.res supports multiple approvers, Docubot only tracks single approver.
+
+**Resolution:** Extend Docubot approval functions to support multiple approvers.
+
+=== SEAM-4C: Cost Budget Integration
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docubot.res | Status
+
+| `costBudget { daily, monthly, dailyUsed, monthlyUsed }` | `costTracking` with same fields | ✓ ALIGNED
+|===
+
+=== SEAM-4D: Health Check Protocol
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docudactyl.res | Status
+
+| `healthCheck { componentId, status, latencyMs, version }` | `componentHealth` with same fields | ✓ ALIGNED
+| `healthStatus` enum (4 variants) | `componentStatus` enum (4 variants) | ✓ ALIGNED
+|===
+
+== SEAM-5: All ↔ ArangoDB
+
+=== SEAM-5A: Document Collection Schema
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Implementation | Status
+
+| `arangoDocument { _key, content, format, path, repository, ... }` | Not yet implemented | PENDING
+|===
+
+=== SEAM-5B: Edge Collection Schema
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Implementation | Status
+
+| `arangoEdge { _from, _to, edgeType, confidence }` | Not yet implemented | PENDING
+| `edgeType` enum (5 variants) | Not yet implemented | PENDING
+|===
+
+=== SEAM-5C: Pack Manifest Schema
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Implementation | Status
+
+| `packManifest { name, version, documents, required, optional }` | Not yet implemented | PENDING
+|===
+
+=== SEAM-5D: Audit Log Schema
+
+[cols="2,2,1"]
+|===
+| Protocol.res | Docubot.res | Status
+
+| `auditLogEntry { component, action, entityType, ... }` | `auditEntry { provider, model, documentType, ... }` | ⚠️ GAP
+|===
+
+==== Gap: Audit Log Schema Mismatch
+
+Different field structures between Protocol.res and Docubot.res.
+
+**Resolution:** Harmonize audit log schemas.
+
+== Summary of Gaps
+
+=== Critical (Must Fix for v1)
+
+. **SEAM-1A:** Missing `id` and `source` in Rust `DocumentEvent`
+. **SEAM-2A:** `repoContext` field mismatch (missing `dependencies`, `readme`)
+. **SEAM-3B:** Missing `progress` field in pipeline execution
+. **SEAM-5A-D:** ArangoDB schemas not implemented
+
+=== Non-Critical (Can Fix in SHOULDs)
+
+. **SEAM-1B:** Format type enum vs string (mapping sufficient)
+. **SEAM-2C:** Audit event type representation (string acceptable)
+. **SEAM-3C:** Rich enforcement results (string errors acceptable MVP)
+. **SEAM-3D:** Detailed shipping results (string acceptable MVP)
+. **SEAM-4B:** Multi-approver workflow (single approver acceptable MVP)
+
+== Fixes Applied
+
+=== Fix 1: Update Rust DocumentEvent
+
+Added `id` and `source` fields (see `commands.rs` update).
+
+=== Fix 2: Update Protocol.res repoContext
+
+Added optional `dependencies` and `readme` fields.
+
+=== Fix 3: Add Progress Tracking
+
+Will implement in SHOULDs phase.
+
+== Seam Status Matrix
+
+[cols="1,1,1,1"]
+|===
+| Seam | Component A | Component B | Status
+
+| SEAM-1 | Formatrix Docs | RSA | ⚠️ 2 gaps
+| SEAM-2 | RSA | Docubot | ⚠️ 2 gaps
+| SEAM-3 | RSA | Docudactyl | ⚠️ 4 gaps
+| SEAM-4 | Docubot | Docudactyl | ✓ 1 minor gap
+| SEAM-5 | All | ArangoDB | ❌ Not implemented
+|===
+
+== Next Steps
+
+. Apply critical fixes (documented below)
+. Proceed to SHOULD requirements
+. Implement ArangoDB integration in SHOULDs
+. Re-run seam check after SHOULDs
+
+== Appendix: Type Compatibility Reference
+
+=== Document Event Flow
+
+```
+[Formatrix Docs]                    [RSA/Protocol]
+DocumentEvent {                     documentEvent {
+  type: Created|Modified|etc        id: string           <-- ADD
+  hash: String                      eventType: Created|etc
+  path: String            =====>    hash: string
+  format: String                    path: string
+  timestamp: f64                    format: string
+}                                   timestamp: float
+                                    source: string       <-- ADD
+                                  }
+```
+
+=== Generation Request Flow
+
+```
+[Protocol.res]                      [Docubot.res]
+generationRequest {                 (function params)
+  requestId: string        =====>   Uses inline params
+  documentType: string              documentType enum
+  format: string                    format enum
+  context: repoContext              repoContext type
+  priority: int                     (not tracked)
+}
+```
+
+=== Health Check Flow
+
+```
+[Protocol.res]                      [Docudactyl.res]
+healthCheck {                       componentHealth {
+  componentId: string      =====>   componentId: componentId
+  status: healthStatus              status: componentStatus
+  latencyMs: option<float>          latencyMs: option<float>
+  version: option<string>           version: option<string>
+  checkedAt: float                  lastCheck: float
+}
+```
