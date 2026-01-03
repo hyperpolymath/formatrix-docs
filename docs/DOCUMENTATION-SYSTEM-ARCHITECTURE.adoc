@@ -1,0 +1,511 @@
+= Documentation System Architecture
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: highlightjs
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+== Overview
+
+The Hyperpolymath Documentation System consists of four integrated components that handle document creation, reconciliation, enforcement, and distribution.
+
+[plantuml,components,svg]
+----
+@startuml
+skinparam componentStyle rectangle
+
+package "Human Side" {
+  [Formatrix Docs] as FD
+  note right of FD : GUI (Tauri)\nTUI (Ada)\nMulti-format editor
+}
+
+package "Machine Side" {
+  [Recon-Silly-Ation] as RSA
+  note right of RSA : ReconForth DSL\nReconciliation engine\nConflict resolution
+
+  [Docubot] as DB
+  note right of DB : LLM integration\nDoc generation\nGuardrails
+
+  [Docudactyl] as DD
+  note right of DD : Orchestration\nPipeline management\nScheduling
+}
+
+package "Infrastructure" {
+  [ArangoDB] as ARANGO
+  [Pack Shipper] as PS
+  [Enforcement Bot] as EB
+}
+
+FD --> RSA : Documents
+FD --> ARANGO : Graph storage
+RSA --> EB : Policies
+RSA --> PS : Bundles
+DD --> RSA : Coordinates
+DD --> DB : Triggers
+DB --> FD : Generated docs
+EB --> RSA : Compliance checks
+PS --> ARANGO : Pack manifests
+@enduml
+----
+
+== Component Breakdown
+
+=== 1. Formatrix Docs (Human Editor)
+
+*Location*: `~/repos/formatrix-docs`
+
+*Purpose*: Cross-platform document editor with format tabs
+
+*Capabilities*:
+
+* View/edit same document in 7 formats (TXT, MD, ADOC, DJOT, ORG, RST, TYP)
+* Live format conversion via unified AST
+* Graph visualization of document links
+* OCR, TTS/STT, spell checking
+* Git integration
+* Nickel-based content pipelines
+
+*Architecture*:
+
+[source]
+----
+formatrix-docs/
+├── crates/
+│   ├── formatrix-core/      # Unified AST + converters (Rust)
+│   ├── formatrix-gui/       # Tauri 2.0 commands
+│   ├── formatrix-db/        # ArangoDB client
+│   └── formatrix-pipeline/  # Nickel executor
+├── tui/                     # Ada TUI (matches gitvisor)
+├── ui/                      # ReScript frontend
+└── pipelines/               # Nickel transform definitions
+----
+
+*Key Types* (formatrix-core):
+
+[source,rust]
+----
+pub enum Block {
+    Paragraph(Vec<Inline>),
+    Heading { level: u8, content: Vec<Inline> },
+    CodeBlock { language: Option<String>, content: String },
+    List { ordered: bool, items: Vec<ListItem> },
+    BlockQuote(Vec<Block>),
+    ThematicBreak,
+    // ...
+}
+
+pub struct Document {
+    pub meta: DocumentMeta,
+    pub blocks: Vec<Block>,
+}
+----
+
+=== 2. Recon-Silly-Ation (Reconciliation Engine)
+
+*Location*: `~/repos/recon-silly-ation`
+
+*Purpose*: Reconcile, deduplicate, and validate documentation bundles
+
+*Capabilities*:
+
+* ReconForth DSL for reconciliation rules
+* 7-stage idempotent pipeline (Scan → Normalize → Deduplicate → Detect → Resolve → Ingest → Report)
+* Content-addressable storage (SHA-256)
+* Graph-based conflict resolution
+* Enforcement bot for automated policy compliance
+* Pack shipper for bundle distribution
+
+*Architecture*:
+
+[source]
+----
+recon-silly-ation/
+├── src/
+│   ├── ReconForth.res       # ReScript bindings to WASM
+│   ├── EnforcementBot.res   # Policy enforcement
+│   ├── PackShipper.res      # Bundle distribution
+│   ├── LogicEngine.res      # Datalog-style inference
+│   └── ...
+├── wasm-modules/
+│   └── src/
+│       ├── lib.rs           # WASM exports
+│       └── reconforth/      # Forth interpreter
+│           ├── lexer.rs
+│           ├── types.rs
+│           ├── vm.rs
+│           ├── builtins.rs  # 80+ built-in words
+│           └── formats.rs   # Format detection/parsing
+└── validator/               # Haskell schema validation
+----
+
+*ReconForth Example*:
+
+[source,forth]
+----
+\ Define a pack specification for minimal documentation
+"minimal-pack" new-pack
+
+"README" require-doc
+"LICENSE" require-doc
+"CONTRIBUTING" optional-doc
+
+\ Validation rule: README must exist and be non-empty
+: check-readme ( bundle -- bundle )
+  dup "README" has-doc?
+  [ "README document required" emit-error ] unless ;
+
+\ Ship pack to spec
+"minimal-pack" pack add-rule
+----
+
+=== 3. Docubot (AI Document Assistant)
+
+*Location*: Could be a module in recon-silly-ation or separate repo
+
+*Purpose*: LLM-powered document generation with guardrails
+
+*Capabilities*:
+
+* Generate missing documentation (README, SECURITY.md, etc.)
+* Suggest improvements to existing docs
+* Cross-reference validation
+* Always requires human approval (never auto-commits)
+* Audit trail for all generated content
+
+*Integration Points*:
+
+[source]
+----
+Docubot
+├── generateMissingDoc()      # Create new doc from context
+├── suggestImprovements()     # Analyze and suggest
+├── validateCrossRefs()       # Check link integrity
+├── auditGeneration()         # Record all LLM outputs
+└── requireApproval()         # ALWAYS returns requiresApproval: true
+----
+
+*Guardrails*:
+
+* ✅ Never auto-commit LLM output
+* ✅ Always require human approval
+* ✅ Validate against schema before use
+* ✅ Maintain complete audit trail
+* ✅ Rate limiting and cost controls
+
+=== 4. Docudactyl (Orchestrator)
+
+*Location*: Could be a new repo or module
+
+*Purpose*: Orchestrate the entire documentation workflow
+
+*Responsibilities*:
+
+* Schedule reconciliation runs
+* Trigger enforcement checks
+* Coordinate between formatrix-docs and recon-silly-ation
+* Manage pack shipping pipelines
+* Dashboard and reporting
+
+*Workflow Example*:
+
+[source]
+----
+1. Developer edits document in formatrix-docs
+2. On save, Docudactyl notifies RSA
+3. RSA runs reconciliation pipeline
+4. Enforcement bot checks policies
+5. If violations found:
+   a. Docubot suggests fixes
+   b. formatrix-docs shows suggestions
+   c. Developer approves/rejects
+6. Pack shipper distributes approved bundles
+7. ArangoDB stores graph of relationships
+----
+
+== Data Flow Architecture
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                         USER INTERACTION                         │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      FORMATRIX-DOCS                              │
+│  ┌───────────────┐   ┌───────────────┐   ┌────────────────┐    │
+│  │   Tauri GUI   │   │   Ada TUI     │   │  formatrix-core│    │
+│  └───────┬───────┘   └───────┬───────┘   └────────┬───────┘    │
+│          └───────────────────┴────────────────────┘             │
+│                              │                                   │
+│                       Unified AST                               │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       DOCUDACTYL                                 │
+│  ┌───────────────┐   ┌───────────────┐   ┌────────────────┐    │
+│  │   Scheduler   │   │   Pipeline    │   │   Dashboard    │    │
+│  └───────┬───────┘   └───────┬───────┘   └────────────────┘    │
+└──────────┼───────────────────┼──────────────────────────────────┘
+           │                   │
+           ▼                   ▼
+┌──────────────────────┐ ┌──────────────────────────────────────┐
+│      DOCUBOT         │ │          RECON-SILLY-ATION           │
+│  ┌────────────────┐  │ │  ┌──────────────┐  ┌──────────────┐ │
+│  │  LLM Engine    │  │ │  │  ReconForth  │  │ LogicEngine  │ │
+│  │  (guardrailed) │  │ │  │     VM       │  │  (Datalog)   │ │
+│  └────────┬───────┘  │ │  └──────┬───────┘  └──────┬───────┘ │
+└───────────┼──────────┘ │         └─────────────────┘         │
+            │            │                  │                   │
+            ▼            │                  ▼                   │
+     ┌──────────┐        │  ┌───────────────────────────────┐  │
+     │ Approval │        │  │     Enforcement Bot           │  │
+     │ Required │        │  └───────────────┬───────────────┘  │
+     └──────────┘        │                  │                   │
+                         │                  ▼                   │
+                         │  ┌───────────────────────────────┐  │
+                         │  │       Pack Shipper            │  │
+                         │  └───────────────┬───────────────┘  │
+                         └──────────────────┼───────────────────┘
+                                            │
+                                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         ARANGODB                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │  Documents   │  │    Edges     │  │    Pack Manifests    │  │
+│  │  (vertices)  │  │  (relations) │  │    (metadata)        │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+----
+
+== Integration Patterns
+
+=== Format Sharing
+
+Both formatrix-docs and recon-silly-ation use the same format parsing libraries:
+
+[cols="3,2,2",options="header"]
+|===
+|Format |Crate |Used By
+
+|Markdown (GFM)
+|comrak
+|Both
+
+|Djot
+|jotdown
+|Both
+
+|Org-mode
+|orgize
+|Both
+
+|AsciiDoc
+|asciidocr
+|formatrix-docs
+
+|reStructuredText
+|rst_parser
+|formatrix-docs
+
+|Typst
+|typst-syntax
+|formatrix-docs
+|===
+
+*Strategy*: formatrix-core is the authoritative parser. RSA can either:
+
+1. Depend on formatrix-core directly (monorepo or crate dependency)
+2. Use simplified parsers for reconciliation (current approach)
+3. Call formatrix-core via FFI/WASM
+
+=== Database Schema
+
+ArangoDB stores both document content and relationships:
+
+[source]
+----
+Collections:
+├── documents           # Document vertices
+│   ├── _key (hash)
+│   ├── content
+│   ├── metadata
+│   └── format
+├── relationships       # Document edges
+│   ├── _from, _to
+│   ├── type (supersedes, duplicates, references)
+│   └── confidence
+├── packs              # Pack manifests
+│   ├── name
+│   ├── documents[]
+│   └── validation_results
+└── enforcement_runs   # Audit log
+    ├── timestamp
+    ├── violations
+    └── resolutions
+----
+
+=== Message Protocol
+
+Components communicate via structured messages:
+
+[source,rescript]
+----
+type DocumentEvent =
+  | DocumentCreated(hash, path, format)
+  | DocumentModified(hash, oldHash, changes)
+  | DocumentDeleted(hash, path)
+  | ConflictDetected(hash1, hash2, conflictType)
+  | ConflictResolved(hash1, hash2, resolution)
+  | PackShipped(packName, destination)
+  | EnforcementViolation(rule, document, severity)
+----
+
+== Deployment Architecture
+
+=== Container Composition
+
+[source,yaml]
+----
+# nerdctl-compose.yml
+services:
+  formatrix:
+    image: ghcr.io/hyperpolymath/formatrix-docs:latest
+    depends_on:
+      - arangodb
+    environment:
+      - ARANGO_URL=http://arangodb:8529
+
+  recon:
+    image: ghcr.io/hyperpolymath/recon-silly-ation:latest
+    depends_on:
+      - arangodb
+    volumes:
+      - repos:/repos:ro
+
+  docubot:
+    image: ghcr.io/hyperpolymath/docubot:latest
+    environment:
+      - LLM_API_KEY=${LLM_API_KEY}
+      - REQUIRE_APPROVAL=true
+
+  docudactyl:
+    image: ghcr.io/hyperpolymath/docudactyl:latest
+    depends_on:
+      - formatrix
+      - recon
+      - docubot
+
+  arangodb:
+    image: arangodb:3.11
+    volumes:
+      - arango_data:/var/lib/arangodb3
+----
+
+=== Binary Distribution
+
+[cols="2,3,2",options="header"]
+|===
+|Component |Binary |Platform
+
+|formatrix-docs
+|formatrix-gui, formatrix-tui
+|Linux, macOS, Windows, Android, iOS
+
+|recon-silly-ation
+|recon-aot
+|Linux, macOS, Windows
+
+|docubot
+|docubot-cli
+|Linux, macOS, Windows
+
+|docudactyl
+|docudactyl
+|Linux, macOS, Windows
+|===
+
+== Development Workflow
+
+=== Adding a New Document Type
+
+1. *formatrix-docs*: Add parser and renderer to formatrix-core
+2. *recon-silly-ation*: Add format detection in ReconForth
+3. *Docubot*: Update templates for the new format
+4. *Docudactyl*: Add format to pipeline configuration
+
+=== Adding a New Enforcement Rule
+
+1. Define rule in ReconForth:
++
+[source,forth]
+----
+: check-spdx-header ( doc -- doc )
+  dup content@ "SPDX-License-Identifier" contains?
+  [ "Missing SPDX header" emit-warning ] unless ;
+----
+
+2. Add to EnforcementBot schedule in ReScript
+3. Configure in Docudactyl pipeline
+
+=== Adding a New Pack Specification
+
+1. Define pack in ReconForth:
++
+[source,forth]
+----
+"security-pack" new-pack
+"SECURITY.md" require-doc
+"security.txt" require-doc
+"CODEOWNERS" optional-doc
+[ check-security-contacts check-disclosure-policy ] pack add-rules
+----
+
+2. Register in PackShipper destinations
+3. Configure shipping schedule in Docudactyl
+
+== Future Considerations
+
+=== v2 Features
+
+* Real-time collaboration between components
+* WebSocket-based event streaming
+* Distributed reconciliation across repos
+* ML-enhanced conflict resolution
+
+=== v3 Features
+
+* CRDT-based collaborative editing in formatrix-docs
+* Flying Logic reasoning diagrams
+* Advanced graph analysis
+* Cross-repository knowledge graphs
+
+== Summary
+
+[cols="2,4",options="header"]
+|===
+|Component |Role
+
+|*Formatrix Docs*
+|Human-facing editor with format tabs and graph view
+
+|*Recon-Silly-Ation*
+|Machine reconciliation with ReconForth DSL
+
+|*Docubot*
+|LLM-powered generation with mandatory guardrails
+
+|*Docudactyl*
+|Orchestrator connecting all components
+|===
+
+The four components form a complete documentation lifecycle:
+
+----
+Edit (formatrix) → Reconcile (RSA) → Enforce (bot) → Ship (packs)
+                          ↑
+                    Generate (docubot)
+----
+
+All coordinated by Docudactyl, with ArangoDB providing the persistent graph layer.

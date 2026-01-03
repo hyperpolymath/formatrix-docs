@@ -11,7 +11,13 @@
    (position-in-ecosystem . "core-application")
 
    (related-projects
-     ((rhodium-standard . "sibling-standard")
+     ((recon-silly-ation . ((relationship . "consumer")
+                           (description . "Machine reconciliation of documents")))
+      (docubot . ((relationship . "assistant")
+                 (description . "LLM-powered doc generation")))
+      (docudactyl . ((relationship . "orchestrator")
+                    (description . "Workflow coordination")))
+      (rhodium-standard . "sibling-standard")
       (gitvisor . "infrastructure")
       (mustfile . "build-system")
       (nickel . "configuration")))
