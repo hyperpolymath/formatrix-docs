@@ -161,7 +161,7 @@ This document defines Must/Should/Could requirements for each component of the d
 
 |FD-C07
 |Gist library (ArangoDB-backed)
-|🔲 Pending
+|✅ Done
 
 |FD-C08
 |Share/send functionality
