@@ -120,6 +120,22 @@ pub unsafe extern "C" fn formatrix_parse(
                 Err(_) => return FfiResult::ParseError,
             }
         }
+        // FD-S02: RST support
+        SourceFormat::ReStructuredText => {
+            use crate::formats::RstHandler;
+            match RstHandler::new().parse(content_str, &config) {
+                Ok(d) => d,
+                Err(_) => return FfiResult::ParseError,
+            }
+        }
+        // FD-S03: Typst support
+        SourceFormat::Typst => {
+            use crate::formats::TypstHandler;
+            match TypstHandler::new().parse(content_str, &config) {
+                Ok(d) => d,
+                Err(_) => return FfiResult::ParseError,
+            }
+        }
         _ => return FfiResult::UnsupportedFormat,
     };
 
@@ -175,6 +191,22 @@ pub unsafe extern "C" fn formatrix_render(
         SourceFormat::OrgMode => {
             use crate::formats::OrgModeHandler;
             match OrgModeHandler::new().render(doc, &config) {
+                Ok(s) => s,
+                Err(_) => return FfiResult::RenderError,
+            }
+        }
+        // FD-S02: RST support
+        SourceFormat::ReStructuredText => {
+            use crate::formats::RstHandler;
+            match RstHandler::new().render(doc, &config) {
+                Ok(s) => s,
+                Err(_) => return FfiResult::RenderError,
+            }
+        }
+        // FD-S03: Typst support
+        SourceFormat::Typst => {
+            use crate::formats::TypstHandler;
+            match TypstHandler::new().render(doc, &config) {
                 Ok(s) => s,
                 Err(_) => return FfiResult::RenderError,
             }
