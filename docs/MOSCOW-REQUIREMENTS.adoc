@@ -106,11 +106,11 @@ This document defines Must/Should/Could requirements for each component of the d
 
 |FD-S07
 |ArangoDB document storage
-|🔲 Pending
+|✅ Done
 
 |FD-S08
 |Recent files list
-|🔲 Pending
+|✅ Done
 
 |FD-S09
 |Auto-save with recovery
@@ -611,7 +611,7 @@ This document defines Must/Should/Could requirements for each component of the d
 
 |SEAM-1C
 |AST interchange format
-|🔲 Pending
+|✅ Done
 
 |SEAM-1D
 |Hash algorithm consistency (SHA-256)
@@ -695,11 +695,11 @@ This document defines Must/Should/Could requirements for each component of the d
 
 |SEAM-5A
 |Document collection schema
-|🔲 Pending
+|✅ Done
 
 |SEAM-5B
 |Edge collection schema
-|🔲 Pending
+|✅ Done
 
 |SEAM-5C
 |Pack manifest collection schema
