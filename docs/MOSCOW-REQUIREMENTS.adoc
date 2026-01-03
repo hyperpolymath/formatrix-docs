@@ -43,7 +43,7 @@ This document defines Must/Should/Could requirements for each component of the d
 
 |FD-M07
 |Basic Tauri GUI shell
-|🔲 Pending
+|✅ Done
 
 |FD-M08
 |Format tabs component (ReScript)
