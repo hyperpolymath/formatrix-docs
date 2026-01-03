@@ -55,7 +55,7 @@ This document defines Must/Should/Could requirements for each component of the d
 
 |FD-M10
 |C FFI exports for Ada TUI
-|🔲 Pending
+|✅ Done
 
 |FD-M11
 |Basic Ada TUI with ncurses

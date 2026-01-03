@@ -278,7 +278,7 @@ pub unsafe extern "C" fn formatrix_block_count(handle: *const DocumentHandle) ->
     if handle.is_null() {
         return 0;
     }
-    (*handle).doc.blocks.len()
+    (*handle).doc.content.len()
 }
 
 /// Get the source format of a document
@@ -290,7 +290,7 @@ pub unsafe extern "C" fn formatrix_get_format(handle: *const DocumentHandle) -> 
     if handle.is_null() {
         return FfiFormat::PlainText;
     }
-    (*handle).doc.meta.source_format.into()
+    (*handle).doc.source_format.into()
 }
 
 /// Free a document handle
