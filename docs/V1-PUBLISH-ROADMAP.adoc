@@ -1,0 +1,310 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Formatrix Ecosystem v1 Publish Roadmap
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: highlightjs
+
+== Overview
+
+This roadmap outlines the path to publishing v1 of the Formatrix documentation ecosystem, comprising four components:
+
+1. **Formatrix Docs** - Human document editor with multi-format tabs
+2. **Recon-Silly-Ation** - Document reconciliation engine (ReconForth VM)
+3. **Docubot** - AI document generation assistant
+4. **Docudactyl** - Orchestration and pipeline management
+
+== Current Status Summary
+
+[cols="1,3,1,1,1",options="header"]
+|===
+|Component |Description |MUSTs |SHOULDs |COULDs
+
+|Formatrix Docs
+|Multi-format document editor
+|9/14 (64%)
+|6/12 (50%)
+|1/12 (8%)
+
+|Recon-Silly-Ation
+|ReconForth reconciliation engine
+|17/17 (100%)
+|2/12 (17%)
+|0/8 (0%)
+
+|Docubot
+|AI document assistant
+|0/10 (0%)
+|0/8 (0%)
+|0/6 (0%)
+
+|Docudactyl
+|Orchestration layer
+|0/10 (0%)
+|0/8 (0%)
+|0/6 (0%)
+|===
+
+== v1 Minimum Viable Ecosystem
+
+For v1 publish, the following are **required**:
+
+=== Phase 1: Core Library Completion
+
+.Formatrix Docs Core
+* [x] Unified AST types
+* [x] All format handlers (MD, DJOT, ORG, RST, TYPST, ADOC, TXT)
+* [x] C FFI for Ada TUI
+* [x] ArangoDB document storage
+* [ ] Document event emission
+* [ ] File open/save operations
+
+.Recon-Silly-Ation Core
+* [x] ReconForth VM complete
+* [x] All core word sets
+* [x] WASM bindings
+* [ ] 7-stage pipeline implementation
+* [ ] CLI interface
+
+.Docubot Core
+* [ ] Module structure
+* [ ] LLM provider abstraction
+* [ ] Approval gate (MANDATORY)
+* [ ] Audit trail
+* [ ] Rate limiting
+
+.Docudactyl Core
+* [ ] Event bus
+* [ ] Pipeline executor
+* [ ] Scheduler
+* [ ] Health checks
+
+=== Phase 2: GUI/TUI Implementation
+
+.Formatrix GUI (Tauri 2.0 + ReScript)
+* [ ] Basic shell with format tabs
+* [ ] Editor component (CodeMirror 6)
+* [ ] File operations dialog
+* [ ] Status bar with git info
+
+.Formatrix TUI (Ada + ncurses)
+* [ ] Tab bar widget
+* [ ] Editor widget
+* [ ] Status bar
+* [ ] Basic file operations
+
+=== Phase 3: Integration Seams
+
+.Critical Seams for v1
+* [x] SEAM-1B: Shared format detection
+* [x] SEAM-1C: AST interchange format
+* [x] SEAM-1D: Hash algorithm (SHA-256)
+* [x] SEAM-5A: Document collection schema
+* [x] SEAM-5B: Edge collection schema
+* [ ] SEAM-1A: Document event protocol
+* [ ] SEAM-2A: Generation request protocol
+* [ ] SEAM-3A: Pipeline trigger protocol
+
+=== Phase 4: Packaging & Distribution
+
+.Container & Package Requirements
+* [ ] Wolfi container image for all components
+* [ ] nerdctl-compose.yml for full stack
+* [ ] Guix channel with packages
+* [ ] Nix flake (fallback)
+* [ ] CI/CD pipelines
+
+.Documentation
+* [ ] README with quick start
+* [ ] Architecture documentation
+* [ ] API reference
+* [ ] User guide
+
+.Compliance
+* [x] SPDX headers on all source files
+* [x] RSR compliance (STATE.scm, ECOSYSTEM.scm, META.scm)
+* [ ] Security audit
+* [ ] License compliance verification
+
+== v1 Scope Decisions
+
+=== Included in v1
+
+* Basic document editing with format tabs (7 formats)
+* Document storage in ArangoDB with graph links
+* ReconForth-based reconciliation with format detection
+* Basic orchestration for pipeline execution
+* TUI for terminal-based editing
+* Container deployment
+
+=== Deferred to v2
+
+* Graph visualization (Obsidian-style)
+* OCR integration (Tesseract)
+* TTS/STT integration
+* Pandoc bridge for exotic formats
+* Collaborative editing
+* Mobile support
+* AI-powered features (Docubot) - may be v1.1 if core ready
+
+== Implementation Priority Order
+
+=== Immediate (v1-blocking)
+
+1. FD-M06: File open/save operations
+2. FD-M07: Tauri GUI shell
+3. FD-M09: Editor component
+4. DD-M02: Event bus
+5. DD-M05: Pipeline executor
+
+=== High Priority (v1-desired)
+
+1. FD-M11: Ada TUI
+2. RSA-S09: 7-stage pipeline
+3. RSA-S11: CLI interface
+4. DB-M01-M04: Docubot core (if time permits)
+
+=== Nice to Have (post-v1)
+
+1. FD-S04: Git status in status bar
+2. FD-S05: Spell checking
+3. Graph view features
+4. External tool integrations
+
+== Dependency Graph
+
+[source]
+----
+formatrix-core
+    ├── formatrix-gui (Tauri)
+    │   └── ui/ (ReScript)
+    ├── formatrix-tui (Ada)
+    ├── formatrix-db
+    │   └── arangodb
+    └── formatrix-pipeline
+        └── nickel-lang
+
+recon-silly-ation
+    ├── wasm (for GUI)
+    └── formatrix-core (AST types)
+
+docubot
+    ├── LLM providers
+    └── formatrix-core (doc types)
+
+docudactyl
+    ├── all components (orchestration)
+    └── arangodb (state)
+----
+
+== Estimated Effort by Component
+
+[cols="1,2,2,2",options="header"]
+|===
+|Component |Remaining MUSTs |Remaining SHOULDs |Total Effort
+
+|Formatrix Docs
+|5 items (GUI/TUI focus)
+|6 items (GUI-dependent)
+|Large
+
+|Recon-Silly-Ation
+|0 items
+|10 items
+|Medium
+
+|Docubot
+|10 items
+|8 items
+|Large
+
+|Docudactyl
+|10 items
+|8 items
+|Large
+|===
+
+== Milestones
+
+=== M1: Core Complete (Current)
+* [x] All format handlers implemented
+* [x] FFI exports for Ada TUI
+* [x] ArangoDB client functional
+* [x] ReconForth VM operational
+
+=== M2: Basic GUI Functional
+* [ ] Tauri shell running
+* [ ] Format tabs working
+* [ ] File open/save working
+* [ ] Editor with syntax highlighting
+
+=== M3: Basic TUI Functional
+* [ ] Ada TUI compiling
+* [ ] Tab switching works
+* [ ] Basic editing works
+* [ ] File operations work
+
+=== M4: Integration Complete
+* [ ] All seams verified
+* [ ] End-to-end workflow test
+* [ ] Event bus operational
+
+=== M5: Packaging Complete
+* [ ] Container images built
+* [ ] Compose file working
+* [ ] Guix packages built
+* [ ] Documentation complete
+
+=== M6: v1 Release
+* [ ] Security audit passed
+* [ ] License compliance verified
+* [ ] Release notes written
+* [ ] Packages published
+
+== Risk Assessment
+
+[cols="1,2,2,2",options="header"]
+|===
+|Risk |Impact |Mitigation |Status
+
+|Tauri 2.0 stability
+|High
+|Test on multiple platforms
+|Monitor
+
+|Ada cross-compilation
+|Medium
+|Use GNAT containers
+|Planned
+
+|ArangoDB complexity
+|Low
+|Schema tested
+|Mitigated
+
+|LLM API changes
+|Medium
+|Abstract provider layer
+|Planned
+
+|ReScript ecosystem
+|Low
+|Fallback to JS if needed
+|Monitor
+|===
+
+== Next Steps
+
+1. **Immediate**: Implement FD-M06 (file operations) in formatrix-core
+2. **This Week**: Set up Tauri shell with basic routing
+3. **This Month**: Get format tabs displaying content
+4. **Next Month**: TUI implementation parallel to GUI
+
+== Success Criteria for v1
+
+* [ ] User can create, edit, and save documents
+* [ ] User can switch between 7 format views
+* [ ] Documents persist in ArangoDB
+* [ ] Basic reconciliation works
+* [ ] Container deployment functional
+* [ ] Documentation sufficient for onboarding
