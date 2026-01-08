@@ -61,6 +61,7 @@ impl DocumentEvent {
         format!("fd-{}-{}", ts, count)
     }
 
+    #[allow(dead_code)]
     pub fn created(content: &str, path: &str, format: &str) -> Self {
         DocumentEvent::Created {
             id: Self::generate_id(),
@@ -72,6 +73,7 @@ impl DocumentEvent {
         }
     }
 
+    #[allow(dead_code)]
     pub fn modified(content: &str, old_content: &str, path: &str, format: &str) -> Self {
         DocumentEvent::Modified {
             id: Self::generate_id(),
@@ -84,6 +86,7 @@ impl DocumentEvent {
         }
     }
 
+    #[allow(dead_code)]
     pub fn deleted(content: &str, path: &str) -> Self {
         DocumentEvent::Deleted {
             id: Self::generate_id(),

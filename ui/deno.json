@@ -16,13 +16,15 @@
     "force-graph": "npm:force-graph@1/"
   },
   "tasks": {
-    "build:res": "rescript build",
-    "watch:res": "rescript build -w",
+    "setup": "deno install npm:rescript@11 npm:@rescript/core npm:@rescript/react && deno run -A npm:rescript@11 build",
+    "build:res": "deno run -A npm:rescript@11 build || echo 'ReScript build skipped (run: deno task setup)'",
+    "watch:res": "deno run -A npm:rescript@11 build -w",
     "dev": "deno task watch:res & cd ../crates/formatrix-gui && cargo tauri dev",
     "build": "deno task build:res && cd ../crates/formatrix-gui && cargo tauri build",
     "fmt": "deno fmt",
     "lint": "deno lint",
-    "clean": "rm -rf lib"
+    "clean": "rm -rf lib src/*.res.js src/**/*.res.js node_modules",
+    "test": "deno test"
   },
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],

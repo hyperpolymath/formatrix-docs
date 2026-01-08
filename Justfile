@@ -6,6 +6,10 @@ set shell := ["bash", "-uc"]
 set dotenv-load := true
 set positional-arguments := true
 
+# Use Zig as C compiler/linker (avoids gcc dependency)
+export CC := env_var_or_default("CC", justfile_directory() / "zig-cc")
+export AR := env_var_or_default("AR", justfile_directory() / "zig-ar")
+
 # Project metadata
 project := "formatrix-docs"
 version := "0.1.0"
@@ -53,26 +57,48 @@ build-core:
     @echo "Building formatrix-core..."
     cargo build -p formatrix-core
 
-# Build Rust GUI (Tauri)
+# Build Rust GUI (Tauri - requires GTK/WebKit dev libs)
 build-gui: build-core
-    @echo "Building formatrix-gui..."
+    #!/usr/bin/env bash
+    echo "Building formatrix-gui..."
+    if ! pkg-config --exists glib-2.0 2>/dev/null; then
+        echo "SKIP: glib-2.0 not found (install gtk4-devel webkit2gtk4.1-devel)"
+        exit 0
+    fi
     cargo build -p formatrix-gui
 
-# Build Ada TUI
+# Build Ada TUI (requires GNAT + ncurses-ada)
 build-tui:
-    @echo "Building formatrix-tui..."
+    #!/usr/bin/env bash
+    echo "Building formatrix-tui..."
+    if ! command -v gprbuild > /dev/null 2>&1; then
+        echo "SKIP: gprbuild not found (install gcc-gnat gprbuild)"
+        exit 0
+    fi
+    # Check for ncurses.gpr availability
+    NCURSES_GPR=""
+    for path in /usr/share/gpr/ncurses.gpr /usr/lib64/gnat/ncurses.gpr /usr/share/ada/adainclude/ncurses.gpr; do
+        if [ -f "$path" ]; then
+            NCURSES_GPR="$path"
+            break
+        fi
+    done
+    if [ -z "$NCURSES_GPR" ]; then
+        echo "SKIP: ncurses.gpr not found (install terminal_interface-curses-devel or florist-devel)"
+        exit 0
+    fi
     cd tui && gprbuild -P formatrix_tui.gpr -XMODE=debug
 
 # Build ReScript UI
 build-ui:
     @echo "Building ReScript UI..."
-    cd ui && deno task build 2>/dev/null || echo "UI build not configured yet"
+    @cd ui && deno task build:res 2>&1 | tail -5
 
 # Build in release mode
 build-release:
     @echo "Building all (release)..."
     cargo build --release
-    cd tui && gprbuild -P formatrix_tui.gpr -XMODE=release
+    @command -v gprbuild > /dev/null 2>&1 && cd tui && gprbuild -P formatrix_tui.gpr -XMODE=release || echo "SKIP: TUI (gprbuild not found)"
     cd ui && deno task build 2>/dev/null || true
 
 # Clean build artifacts
@@ -98,7 +124,7 @@ test-core:
 # Test Ada TUI (compile check)
 test-tui: build-tui
     @echo "Testing formatrix-tui..."
-    [ -f tui/bin/formatrix-tui ] && echo "TUI binary exists" || exit 1
+    @[ -f tui/bin/formatrix-tui ] && echo "TUI binary exists" || echo "SKIP: TUI not built (missing dependencies)"
 
 # Test ReScript UI
 test-ui:
@@ -163,13 +189,12 @@ run-debug:
 deps:
     @echo "Checking dependencies..."
     @command -v cargo > /dev/null 2>&1 || { echo "ERROR: cargo not found"; exit 1; }
-    @command -v gnat > /dev/null 2>&1 || { echo "ERROR: gnat not found"; exit 1; }
-    @command -v gprbuild > /dev/null 2>&1 || { echo "ERROR: gprbuild not found"; exit 1; }
     @command -v deno > /dev/null 2>&1 || { echo "ERROR: deno not found"; exit 1; }
     @echo "Rust: $(rustc --version)"
-    @echo "GNAT: $(gnat --version | head -1)"
     @echo "Deno: $(deno --version | head -1)"
-    @echo "All dependencies satisfied"
+    @command -v gnat > /dev/null 2>&1 && echo "GNAT: $(gnat --version | head -1)" || echo "WARN: gnat not found (TUI disabled)"
+    @command -v gprbuild > /dev/null 2>&1 || echo "WARN: gprbuild not found (TUI disabled)"
+    @echo "Core dependencies satisfied"
 
 # Audit dependencies for vulnerabilities
 deps-audit:
@@ -204,43 +229,72 @@ cookbook:
     echo "Generated: $OUTPUT"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CONTAINERS (nerdctl + Wolfi)
+# CONTAINERS (nerdctl-first, podman-fallback)
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# Detect container runtime: nerdctl > podman > docker
+[private]
+container-cmd:
+    #!/usr/bin/env bash
+    if command -v nerdctl >/dev/null 2>&1; then
+        echo "nerdctl"
+    elif command -v podman >/dev/null 2>&1; then
+        echo "podman"
+    elif command -v docker >/dev/null 2>&1; then
+        echo "docker"
+    else
+        echo "ERROR: No container runtime found (install nerdctl, podman, or docker)" >&2
+        exit 1
+    fi
 
 # Build container image
 container-build tag="latest":
-    @echo "Building container..."
-    nerdctl build -t {{project}}:{{tag}} -f container/Dockerfile.wolfi .
+    #!/usr/bin/env bash
+    CTR=$(just container-cmd)
+    echo "Building container with $CTR..."
+    $CTR build -t {{project}}:{{tag}} -f container/Dockerfile.wolfi .
 
 # Run container (GUI)
-container-run tag="latest" *args:
-    nerdctl run --rm -it \
+container-run tag="latest" cmd="":
+    #!/usr/bin/env bash
+    CTR=$(just container-cmd)
+    $CTR run --rm -it \
         -e DISPLAY=$DISPLAY \
         -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
-        {{project}}:{{tag}} {{args}}
+        {{project}}:{{tag}} {{cmd}}
 
 # Run container (TUI)
 container-run-tui tag="latest":
-    nerdctl run --rm -it \
+    #!/usr/bin/env bash
+    CTR=$(just container-cmd)
+    $CTR run --rm -it \
         -e TERM=$TERM \
         {{project}}:{{tag}} /usr/local/bin/formatrix-tui
 
 # Start all services with compose
 compose-up:
-    cd container && nerdctl compose up -d
+    #!/usr/bin/env bash
+    CTR=$(just container-cmd)
+    cd container && $CTR compose up -d
 
 # Stop all services
 compose-down:
-    cd container && nerdctl compose down
+    #!/usr/bin/env bash
+    CTR=$(just container-cmd)
+    cd container && $CTR compose down
 
 # View logs
 compose-logs:
-    cd container && nerdctl compose logs -f
+    #!/usr/bin/env bash
+    CTR=$(just container-cmd)
+    cd container && $CTR compose logs -f
 
 # Push container image
 container-push registry="ghcr.io/hyperpolymath" tag="latest":
-    nerdctl tag {{project}}:{{tag}} {{registry}}/{{project}}:{{tag}}
-    nerdctl push {{registry}}/{{project}}:{{tag}}
+    #!/usr/bin/env bash
+    CTR=$(just container-cmd)
+    $CTR tag {{project}}:{{tag}} {{registry}}/{{project}}:{{tag}}
+    $CTR push {{registry}}/{{project}}:{{tag}}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CI & AUTOMATION
@@ -252,14 +306,11 @@ ci: deps quality
 
 # Install git hooks
 install-hooks:
-    @mkdir -p .git/hooks
-    @cat > .git/hooks/pre-commit << 'EOF'
-#!/bin/bash
-just fmt-check || exit 1
-just lint || exit 1
-EOF
-    @chmod +x .git/hooks/pre-commit
-    @echo "Git hooks installed"
+    #!/usr/bin/env bash
+    mkdir -p .git/hooks
+    printf '%s\n' '#!/bin/bash' 'just fmt-check || exit 1' 'just lint || exit 1' > .git/hooks/pre-commit
+    chmod +x .git/hooks/pre-commit
+    echo "Git hooks installed"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECURITY

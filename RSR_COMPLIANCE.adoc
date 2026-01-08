@@ -1,0 +1,123 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Rhodium Standard Repositories (RSR) Compliance
+:toc: left
+:toclevels: 2
+:icons: font
+
+== Overview
+
+This document certifies that *formatrix-docs* complies with the Rhodium Standard Repositories (RSR) specification.
+
+== RSR Tier
+
+*Tier 2* - Full-featured project with multi-language support
+
+== Compliance Checklist
+
+=== Mandatory Files
+
+[cols="1,1,2", options="header"]
+|===
+| File | Status | Notes
+
+| `.editorconfig`
+| PRESENT
+| Standard formatting rules
+
+| `.gitignore`
+| PRESENT
+| Language-specific ignores
+
+| `justfile`
+| PRESENT
+| 53+ recipes covering build, test, lint, container
+
+| `README.adoc`
+| PRESENT
+| Project documentation
+
+| `STATE.scm`
+| PRESENT
+| Project state tracking
+
+| `ECOSYSTEM.scm`
+| PRESENT
+| Ecosystem position
+
+| `META.scm`
+| PRESENT
+| Architecture decisions
+
+|===
+
+=== Language Policy Compliance
+
+[cols="1,1,2", options="header"]
+|===
+| Language | Use Case | Status
+
+| Rust
+| Core library, GUI backend
+| COMPLIANT
+
+| Ada
+| TUI implementation
+| COMPLIANT
+
+| ReScript
+| UI components
+| COMPLIANT
+
+| Nickel
+| Pipeline configuration
+| COMPLIANT
+
+| Guile Scheme
+| SCM state files
+| COMPLIANT
+
+| Deno
+| JavaScript runtime
+| COMPLIANT
+
+|===
+
+=== Banned Languages
+
+No banned languages (TypeScript, Node.js, npm, Go, Python) are present in this repository.
+
+== Justfile Recipes
+
+=== Build Recipes
+- `build` - Build all components
+- `build-core` - Rust core
+- `build-gui` - Tauri GUI
+- `build-tui` - Ada TUI
+- `build-ui` - ReScript UI
+- `build-release` - Release mode
+
+=== Quality Recipes
+- `test` - Run all tests
+- `fmt` - Format code
+- `lint` - Run linters
+- `quality` - Full quality pipeline
+
+=== Container Recipes
+- `container-build` - Build Wolfi image
+- `compose-up/down` - Manage services
+
+=== Validation Recipes
+- `validate-rsr` - Check RSR compliance
+- `validate-state` - Validate STATE.scm
+
+== Container Compliance
+
+Using Wolfi-based container images as per RSR container policy.
+
+== Last Verified
+
+{docdate}
+
+== Maintainer
+
+Jonathan D.A. Jewell <hyperpolymath>
