@@ -1,6 +1,6 @@
 image:https://img.shields.io/badge/license-PMPL--1.0-blue.svg[License,link="https://github.com/hyperpolymath/palimpsest-license"]
 // SPDX-License-Identifier: PMPL-1.0
-= Formatrix Docs
+= DocMatrix
 
 
 
