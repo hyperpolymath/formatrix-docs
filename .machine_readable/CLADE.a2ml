@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "b2b4b7a9-cc35-5fd9-9014-19ea3377a8fc"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "formatrix-docs"
+prefixed-name = "dx-formatrix-docs"
+
+[clade]
+primary = "dx"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/formatrix-docs"
+gitlab = "hyperpolymath/formatrix-docs"
+bitbucket = "hyperpolymath/formatrix-docs"
+
+[lineage]
+type = "standalone"
+parent = "Formatrix documentation"
+born = "2026-03-16"
