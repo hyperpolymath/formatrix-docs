@@ -7,6 +7,7 @@
 //! - Implementations for 7 formats: TXT, MD, ADOC, DJOT, ORG, RST, TYP
 //! - C FFI exports for the Ada TUI (FD-M10)
 
+#![forbid(unsafe_code)]
 pub mod ast;
 pub mod file_ops;
 pub mod formats;
