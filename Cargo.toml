@@ -10,6 +10,7 @@ members = [
     "crates/formatrix-gui",
     "crates/formatrix-db",
     "crates/formatrix-pipeline",
+    "crates/formatrix-bridges",
 ]
 
 [workspace.package]
@@ -63,6 +64,21 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Utilities
 unicode-segmentation = "1.11"
+
+# HTTP client (for bridges)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# Async trait (for KnowledgeStore)
+async-trait = "0.1"
+
+# URL encoding
+urlencoding = "2.1"
+
+# File watching
+notify = "7.0"
+
+# Base64
+base64 = "0.22"
 
 [profile.release]
 lto = true

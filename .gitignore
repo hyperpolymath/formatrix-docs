@@ -17,3 +17,5 @@ __pycache__/
 
 # Crash recovery artifacts
 ai-cli-crash-capture/
+zig-out/
+.zig-cache/

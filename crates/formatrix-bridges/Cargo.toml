@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+[package]
+name = "formatrix-bridges"
+description = "Knowledge tool bridges for Formatrix — Trilium, Obsidian, Joplin, Logseq interop"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Formatrix core for AST, parsers, renderers
+formatrix-core = { path = "../formatrix-core" }
+
+# HTTP client for REST API bridges (Trilium ETAPI, Joplin Data API)
+reqwest.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Async runtime
+tokio.workspace = true
+
+# Logging
+tracing.workspace = true
+
+# Async trait
+async-trait.workspace = true
+
+# URL encoding
+urlencoding.workspace = true
+
+# File watching for filesystem-based bridges (Obsidian, Logseq)
+notify.workspace = true
+
+# Base64 for Trilium ETAPI auth
+base64.workspace = true
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockito = "1.6"
+tempfile = "3.14"
+
+[features]
+default = ["trilium", "filesystem"]
+trilium = []
+joplin = []
+filesystem = []  # Obsidian, Logseq, Zettlr (folder-of-files)
