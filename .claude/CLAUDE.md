@@ -7,7 +7,7 @@ Cross-platform document editor with format tabs, allowing users to view and edit
 ## Architecture
 
 - **Core**: Rust library with unified AST for format conversion
-- **GUI**: Tauri 2.0 with ReScript frontend (not TypeScript!)
+- **GUI**: Gossamer with ReScript frontend (not TypeScript!)
 - **TUI**: Ada with AdaCurses (matches git-hud pattern)
 - **Storage**: ArangoDB for graph + document hybrid
 - **Pipelines**: Nickel for import/export transformations
@@ -34,7 +34,7 @@ Cross-platform document editor with format tabs, allowing users to view and edit
 ```
 crates/
 ├── formatrix-core/    # AST, parsers, renderers
-├── formatrix-gui/     # Tauri commands
+├── formatrix-gui/     # Gossamer commands
 ├── formatrix-db/      # ArangoDB client
 └── formatrix-pipeline/ # Nickel executor
 

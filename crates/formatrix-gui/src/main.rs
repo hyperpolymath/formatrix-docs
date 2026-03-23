@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-//! Formatrix Docs - Tauri 2.0 desktop application
+//! Formatrix Docs - Gossamer desktop application
 //!
 //! Cross-platform document editor with format tabs.
+//! Migrated from Tauri 2.0 to Gossamer webview shell.
 
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
-use tauri::Manager;
+use gossamer_rs::App;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod commands;
@@ -15,36 +14,22 @@ fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "formatrix_gui=debug,tauri=info".into()),
+                .unwrap_or_else(|_| "formatrix_gui=debug,gossamer=info".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
     tracing::info!("Starting Formatrix Docs v{}", env!("CARGO_PKG_VERSION"));
 
-    tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![
-            commands::load_document,
-            commands::save_document,
-            commands::convert_to_format,
-            commands::get_document_events,
-            commands::clear_document_events,
-            commands::parse_document,
-            commands::render_document,
-            commands::detect_format,
-            commands::get_supported_formats,
-        ])
-        .setup(|app| {
-            #[cfg(debug_assertions)]
-            {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
-            }
-            Ok(())
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    App::new()
+        .command("load_document", commands::load_document)
+        .command("save_document", commands::save_document)
+        .command("convert_to_format", commands::convert_to_format)
+        .command("get_document_events", commands::get_document_events)
+        .command("clear_document_events", commands::clear_document_events)
+        .command("parse_document", commands::parse_document)
+        .command("render_document", commands::render_document)
+        .command("detect_format", commands::detect_format)
+        .command("get_supported_formats", commands::get_supported_formats)
+        .run();
 }

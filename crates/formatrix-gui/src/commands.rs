@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-//! Tauri commands for document operations
+//! Gossamer commands for document operations
+//!
+//! All handlers are synchronous — uses std::fs instead of tokio::fs.
+//! Gossamer runs each command invocation on its own thread.
 
 use formatrix_core::{ParseConfig, RenderConfig};
 use serde::{Deserialize, Serialize};
@@ -135,7 +138,6 @@ pub fn emit_event(event: DocumentEvent) {
 }
 
 /// Get recent document events
-#[tauri::command]
 pub fn get_document_events(limit: usize) -> Vec<DocumentEvent> {
     if let Ok(log) = EVENT_LOG.lock() {
         log.iter()
@@ -149,7 +151,6 @@ pub fn get_document_events(limit: usize) -> Vec<DocumentEvent> {
 }
 
 /// Clear document event log
-#[tauri::command]
 pub fn clear_document_events() {
     if let Ok(mut log) = EVENT_LOG.lock() {
         log.clear();
@@ -177,11 +178,9 @@ pub struct ConversionResult {
     pub warnings: Vec<String>,
 }
 
-/// Load a document from the filesystem
-#[tauri::command]
-pub async fn load_document(path: String) -> Result<DocumentData, String> {
-    let content = tokio::fs::read_to_string(&path)
-        .await
+/// Load a document from the filesystem (synchronous — std::fs)
+pub fn load_document(path: String) -> Result<DocumentData, String> {
+    let content = std::fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read file: {}", e))?;
 
     // Detect format from extension
@@ -216,15 +215,13 @@ pub async fn load_document(path: String) -> Result<DocumentData, String> {
     })
 }
 
-/// Save a document to the filesystem
-#[tauri::command]
-pub async fn save_document(
+/// Save a document to the filesystem (synchronous — std::fs)
+pub fn save_document(
     path: String,
     content: String,
     format: String,
 ) -> Result<DocumentMeta, String> {
-    tokio::fs::write(&path, &content)
-        .await
+    std::fs::write(&path, &content)
         .map_err(|e| format!("Failed to write file: {}", e))?;
 
     let word_count = content.split_whitespace().count();
@@ -240,8 +237,7 @@ pub async fn save_document(
 }
 
 /// Convert document content from one format to another
-#[tauri::command]
-pub async fn convert_to_format(
+pub fn convert_to_format(
     content: String,
     from_format: String,
     to_format: String,
@@ -252,7 +248,7 @@ pub async fn convert_to_format(
     };
     use formatrix_core::traits::{Parser, Renderer};
 
-    // For now, just return the content as-is if converting to same format
+    // Return content as-is if converting to same format
     if from_format == to_format {
         return Ok(ConversionResult {
             content,
@@ -337,8 +333,7 @@ pub struct ParsedDocument {
 }
 
 /// Parse a document and return metadata
-#[tauri::command]
-pub async fn parse_document(content: String, format: String) -> Result<ParsedDocument, String> {
+pub fn parse_document(content: String, format: String) -> Result<ParsedDocument, String> {
     use formatrix_core::formats::{
         AsciidocHandler, DjotHandler, MarkdownHandler, OrgModeHandler, PlainTextHandler,
         RstHandler, TypstHandler,
@@ -381,9 +376,8 @@ pub async fn parse_document(content: String, format: String) -> Result<ParsedDoc
     })
 }
 
-/// Render a document from AST JSON (for advanced use)
-#[tauri::command]
-pub async fn render_document(content: String, to_format: String) -> Result<String, String> {
+/// Render a document from content (parses as markdown, renders to target format)
+pub fn render_document(content: String, to_format: String) -> Result<String, String> {
     use formatrix_core::formats::{
         AsciidocHandler, DjotHandler, MarkdownHandler, OrgModeHandler, PlainTextHandler,
         RstHandler, TypstHandler,
@@ -429,7 +423,6 @@ pub async fn render_document(content: String, to_format: String) -> Result<Strin
 }
 
 /// Detect format from content using heuristics
-#[tauri::command]
 pub fn detect_format(content: String) -> String {
     use formatrix_core::file_ops::format_from_content;
 
@@ -446,7 +439,6 @@ pub struct FormatInfo {
 }
 
 /// Get list of supported formats
-#[tauri::command]
 pub fn get_supported_formats() -> Vec<FormatInfo> {
     vec![
         FormatInfo {

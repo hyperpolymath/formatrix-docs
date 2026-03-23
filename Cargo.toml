@@ -42,9 +42,8 @@ nickel-lang-core = "0.10"
 tesseract-rs = "0.3"
 vosk = "0.3"
 
-# GUI framework
-tauri = { version = "2", features = [] }
-tauri-build = "2"
+# GUI framework (Gossamer — path dependency, not published)
+# gossamer-rs resolved via crate-level path dep
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -55,7 +54,7 @@ toml = "0.8"
 thiserror = "2.0"
 anyhow = "1.0"
 
-# Async runtime
+# Async runtime (retained for non-GUI crates)
 tokio = { version = "1.42", features = ["rt-multi-thread", "macros", "fs", "io-util"] }
 
 # Logging
