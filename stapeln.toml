@@ -1,0 +1,271 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# stapeln.toml — Layer-based container build for formatrix-docs
+#
+# stapeln builds containers as composable layers (German: "to stack").
+# Each layer is independently cacheable, verifiable, and signable.
+#
+# Formatrix Docs is a cross-platform document editor / knowledge tool nexus
+# with format tabs (TXT, MD, ADOC, DJOT, ORG, RST, TYP). It comprises a
+# Rust core, Gossamer+ReScript GUI, Ada TUI, ArangoDB storage, and Nickel
+# pipelines. Optional sidecar services: Vosk (speech-to-text), Tesseract (OCR).
+
+[metadata]
+name = "formatrix-docs"
+version = "0.1.0"
+description = "Cross-platform document editor and knowledge tool nexus with format tabs"
+author = "Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"
+license = "PMPL-1.0-or-later"
+registry = "ghcr.io/hyperpolymath"
+
+[build]
+containerfile = "container/Containerfile"
+context = "."
+runtime = "podman"
+
+# ── Layer Definitions ──────────────────────────────────────────
+
+[layers.base]
+description = "Chainguard Wolfi minimal base"
+from = "cgr.dev/chainguard/wolfi-base:latest"
+cache = true
+verify = true
+
+# ── Rust Build Chain ──────────────────────────────────────────
+
+[layers.rust-toolchain]
+description = "Rust compiler and build tooling"
+extends = "base"
+packages = ["rust", "cargo", "openssl-dev", "pkgconf", "build-base"]
+cache = true
+
+[layers.rust-deps]
+description = "Pre-cached Rust workspace dependencies"
+extends = "rust-toolchain"
+commands = [
+    "mkdir -p /build",
+    "cp Cargo.toml Cargo.lock /build/",
+    "cp -r crates /build/crates",
+]
+workdir = "/build"
+cache = true
+
+[layers.rust-build]
+description = "Compile Rust workspace crates (core, gui, db, pipeline, bridges)"
+extends = "rust-deps"
+commands = [
+    "cargo build --release -p formatrix-core -p formatrix-gui -p formatrix-db -p formatrix-pipeline -p formatrix-bridges",
+]
+workdir = "/build"
+
+# ── Ada TUI Build Chain ──────────────────────────────────────
+
+[layers.ada-toolchain]
+description = "GNAT Ada compiler and gprbuild"
+extends = "base"
+packages = ["gcc-gnat", "gprbuild", "ncurses-dev", "build-base"]
+cache = true
+
+[layers.ada-build]
+description = "Compile Ada TUI binary"
+extends = "ada-toolchain"
+commands = [
+    "mkdir -p /build/tui",
+    "cp -r tui /build/tui",
+    "cd /build/tui && gprbuild -P formatrix_tui.gpr -XMODE=release",
+]
+workdir = "/build"
+
+# ── Zig FFI Build Chain ─────────────────────────────────────
+
+[layers.zig-toolchain]
+description = "Zig compiler for FFI layer"
+extends = "base"
+packages = ["zig"]
+cache = true
+
+[layers.zig-build]
+description = "Compile Zig FFI bindings"
+extends = "zig-toolchain"
+commands = [
+    "mkdir -p /build/ffi/zig",
+    "cp -r ffi/zig /build/ffi/zig",
+    "cd /build/ffi/zig && zig build -Doptimize=ReleaseSafe",
+]
+workdir = "/build"
+
+# ── ReScript UI Build Chain ──────────────────────────────────
+
+[layers.deno-toolchain]
+description = "Deno runtime for ReScript UI build"
+extends = "base"
+packages = ["deno"]
+cache = true
+
+[layers.ui-build]
+description = "Build ReScript frontend assets"
+extends = "deno-toolchain"
+commands = [
+    "mkdir -p /build/ui",
+    "cp -r ui /build/ui",
+    "cd /build/ui && deno task build",
+]
+workdir = "/build"
+
+# ── Runtime Image ────────────────────────────────────────────
+
+[layers.runtime]
+description = "Minimal production runtime with all compiled artifacts"
+from = "cgr.dev/chainguard/wolfi-base:latest"
+packages = [
+    "ca-certificates",
+    "curl",
+    "openssl",
+    "ncurses",
+    "gtk+3.0",
+    "webkit2gtk",
+    "libsoup",
+    "tesseract-ocr",
+    "tesseract-ocr-eng",
+    "espeak-ng",
+    "hunspell",
+    "hunspell-en-us",
+    "pandoc",
+]
+copy-from = [
+    { layer = "rust-build", src = "/build/target/release/formatrix-gui", dst = "/usr/local/bin/formatrix-gui" },
+    { layer = "rust-build", src = "/build/target/release/formatrix-core", dst = "/usr/local/lib/libformatrix_core.so" },
+    { layer = "ada-build", src = "/build/tui/bin/formatrix-tui", dst = "/usr/local/bin/formatrix-tui" },
+    { layer = "zig-build", src = "/build/ffi/zig/zig-out/lib/", dst = "/usr/local/lib/" },
+    { layer = "ui-build", src = "/build/ui/dist/", dst = "/opt/formatrix-docs/ui/" },
+]
+entrypoint = ["/usr/local/bin/formatrix-gui"]
+user = "formatrix"
+
+[layers.runtime-tui]
+description = "TUI-only runtime (no GUI dependencies)"
+from = "cgr.dev/chainguard/wolfi-base:latest"
+packages = [
+    "ca-certificates",
+    "curl",
+    "openssl",
+    "ncurses",
+    "tesseract-ocr",
+    "tesseract-ocr-eng",
+    "hunspell",
+    "hunspell-en-us",
+]
+copy-from = [
+    { layer = "rust-build", src = "/build/target/release/formatrix-core", dst = "/usr/local/lib/libformatrix_core.so" },
+    { layer = "ada-build", src = "/build/tui/bin/formatrix-tui", dst = "/usr/local/bin/formatrix-tui" },
+    { layer = "zig-build", src = "/build/ffi/zig/zig-out/lib/", dst = "/usr/local/lib/" },
+]
+entrypoint = ["/usr/local/bin/formatrix-tui"]
+user = "formatrix"
+
+# ── Sidecar: ArangoDB ───────────────────────────────────────
+
+[layers.arangodb]
+description = "ArangoDB graph+document database sidecar"
+from = "arangodb/arangodb:3.12"
+env = { ARANGO_NO_AUTH = "0" }
+healthcheck = { test = ["CMD", "curl", "-f", "http://localhost:8529/_api/version"], interval = "30s", timeout = "10s", retries = 5 }
+
+# ── Sidecar: Vosk ───────────────────────────────────────────
+
+[layers.vosk]
+description = "Vosk speech-to-text sidecar (optional, profile: speech)"
+from = "alphacep/kaldi-vosk-server:latest"
+expose = [2700]
+
+# ── Security ───────────────────────────────────────────────────
+
+[security]
+non-root = true
+read-only-root = true
+no-new-privileges = true
+cap-drop = ["ALL"]
+seccomp-profile = "default"
+
+[security.signing]
+algorithm = "ML-DSA-87"
+provider = "cerro-torre"
+
+[security.sbom]
+format = "spdx-json"
+output = "sbom.spdx.json"
+include-deps = true
+
+# ── Verification ───────────────────────────────────────────────
+
+[verify]
+vordr = true
+svalinn = true
+scan-on-build = true
+fail-on = ["critical", "high"]
+
+# ── Targets ────────────────────────────────────────────────────
+
+[targets.development]
+description = "Full dev environment with all toolchains and debug logging"
+layers = ["base", "rust-toolchain", "rust-deps", "rust-build", "ada-toolchain", "ada-build", "zig-toolchain", "zig-build", "deno-toolchain", "ui-build"]
+env = { LOG_LEVEL = "debug", FORMATRIX_DB_URL = "http://arangodb:8529", FORMATRIX_DB_NAME = "formatrix" }
+
+[targets.production]
+description = "Minimal GUI runtime image"
+layers = ["runtime"]
+env = { LOG_LEVEL = "info", FORMATRIX_DB_URL = "http://arangodb:8529", FORMATRIX_DB_NAME = "formatrix" }
+
+[targets.production-tui]
+description = "Minimal TUI-only runtime image (headless / terminal)"
+layers = ["runtime-tui"]
+env = { LOG_LEVEL = "info", TERM = "xterm-256color", FORMATRIX_DB_URL = "http://arangodb:8529", FORMATRIX_DB_NAME = "formatrix" }
+
+[targets.test]
+description = "Build environment for CI test runs"
+layers = ["base", "rust-toolchain", "rust-deps", "rust-build", "ada-toolchain", "ada-build", "zig-toolchain", "zig-build", "deno-toolchain", "ui-build"]
+env = { LOG_LEVEL = "debug", RUST_BACKTRACE = "1", FORMATRIX_DB_URL = "http://arangodb:8529", FORMATRIX_DB_NAME = "formatrix_test" }
+
+# ── Compose (sidecar orchestration) ──────────────────────────
+
+[compose]
+description = "Full stack with ArangoDB and optional Vosk"
+
+[compose.services.formatrix]
+target = "production"
+ports = []
+volumes = [
+    "formatrix-data:/home/formatrix/.local/share/formatrix-docs",
+    "${HOME}/Documents:/home/formatrix/Documents:rw",
+]
+depends-on = ["arangodb"]
+network = "formatrix-net"
+
+[compose.services.formatrix-tui]
+target = "production-tui"
+volumes = [
+    "formatrix-data:/home/formatrix/.local/share/formatrix-docs",
+    "${HOME}/Documents:/home/formatrix/Documents:rw",
+]
+depends-on = ["arangodb"]
+network = "formatrix-net"
+profiles = ["tui"]
+
+[compose.services.arangodb]
+layer = "arangodb"
+ports = ["8529:8529"]
+volumes = ["arangodb-data:/var/lib/arangodb3", "arangodb-apps:/var/lib/arangodb3-apps"]
+network = "formatrix-net"
+
+[compose.services.vosk]
+layer = "vosk"
+ports = ["2700:2700"]
+network = "formatrix-net"
+profiles = ["speech"]
+
+[compose.networks.formatrix-net]
+driver = "bridge"
+
+[compose.volumes]
+formatrix-data = {}
+arangodb-data = {}
+arangodb-apps = {}
