@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: MPL-2.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # Post-audit Status Report: formatrix-docs
 - **Date:** 2026-04-15
 - **Status:** Complete (M5 Sweep)
@@ -12,7 +16,7 @@
 ## Findings Summary
 - 11 unwrap/expect calls in crates/formatrix-core/src/file_ops.rs
 - flake.nix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in nix/flake.nix
-- 14 TODO/FIXME/HACK markers in contractiles/k9/template-hunt.k9.ncl
+- 14 TODO/FIXME/HACK markers in contractiles/self-validating/template-hunt.k9.ncl
 - flake.nix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in flake.nix
 
 ## Final Grade
