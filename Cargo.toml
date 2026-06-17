@@ -36,7 +36,7 @@ asciidoc-parser = "0.14"
 arangors = "0.6"
 
 # Pipeline
-nickel-lang-core = "0.10"
+nickel-lang-core = "0.18"
 
 # External tools
 tesseract-rs = "0.3"
