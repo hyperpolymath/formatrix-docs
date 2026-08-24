@@ -15,9 +15,9 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 
 ## Findings Summary
 - 11 unwrap/expect calls in crates/formatrix-core/src/file_ops.rs
-- flake.nix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in nix/flake.nix
+- flake.guix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in guix/flake.guix
 - 14 TODO/FIXME/HACK markers in contractiles/self-validating/template-hunt.k9.ncl
-- flake.nix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in flake.nix
+- flake.guix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in flake.guix
 
 ## Final Grade
 - **CRG Grade:** D (Promoted from E/X) - CI and lockfiles are in place.
