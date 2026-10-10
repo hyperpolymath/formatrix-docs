@@ -66,7 +66,7 @@ See `docs/ecosystem/ECOSYSTEM.adoc`.
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 CORE ENGINE (RUST)
-  Unified AST                       ██████████ 100%    Lossless conversion stable
+  Unified AST                       ██████████ 100%    Shared representation behind the format tabs
   Format Parsers (MD/ADOC/etc)      ████████░░  80%    Typst parser refining
   Nickel Pipeline Executor          ██████████ 100%    Transformations active
   ArangoDB Client                   ██████████ 100%    Document persistence stable
