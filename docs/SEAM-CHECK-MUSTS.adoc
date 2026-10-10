@@ -20,6 +20,7 @@ This document validates integration seams between ecosystem components after imp
 | Recon-Silly-Ation | recon-silly-ation | ✓ Implemented
 | Docubot | recon-silly-ation/Docubot.res | ✓ Implemented
 | Docudactyl | recon-silly-ation/Docudactyl.res | ✓ Implemented
+| blocky-writer | blocky-writer | Boundary declared (formatrix-docs#61); no integration
 |===
 
 == SEAM-1: Formatrix ↔ RSA
@@ -276,6 +277,37 @@ Different field structures between Protocol.res and Docubot.res.
 
 **Resolution:** Harmonize audit log schemas.
 
+== SEAM-6: Formatrix ↔ blocky-writer
+
+Inbound notice: https://github.com/hyperpolymath/formatrix-docs/issues/61[formatrix-docs#61].
+Long form: link:ecosystem/ECOSYSTEM.adoc[docs/ecosystem/ECOSYSTEM.adoc].
+Machine-readable: link:../.machine_readable/integrations/blocky-writer.a2ml[`.machine_readable/integrations/blocky-writer.a2ml`].
+
+No integration is proposed. The seam is recorded so neither side invents a
+second, incompatible shape.
+
+=== SEAM-6A: `detect_blocks` widget geometry
+
+[cols="2,2,1"]
+|===
+| blocky-writer (`rust/pdftool_core`) | Formatrix Docs consumer | Status
+
+| `Block` with fields label, x, y, width, height (`f32` coordinates, PDF user space)
+| Optional overlay on graph / relationship views (FD-C01)
+| ⚪ RECORDED, not consumed
+
+| `label` from AcroForm `/T`, else parent `/T`, else `field_<page>_<index>`
+| Display name for a landed value
+| ⚪ RECORDED, not consumed
+|===
+
+==== Note: Not an integration
+
+blocky-writer owns placement. Formatrix Docs owns viewing and editing. A green
+editor test does not prove page geometry, and exact page coordinates do not
+prove semantic correctness. Do not add a second JSON shape for "where a value
+lands in a PDF".
+
 == Summary of Gaps
 
 === Critical (Must Fix for v1)
@@ -318,6 +350,7 @@ Will implement in SHOULDs phase.
 | SEAM-3 | RSA | Docudactyl | ⚠️ 4 gaps
 | SEAM-4 | Docubot | Docudactyl | ✓ 1 minor gap
 | SEAM-5 | All | ArangoDB | ❌ Not implemented
+| SEAM-6 | Formatrix Docs | blocky-writer | ⚪ Boundary declared; seam recorded, not consumed
 |===
 
 == Next Steps

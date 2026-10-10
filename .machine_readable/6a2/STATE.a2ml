@@ -5,10 +5,17 @@
 [metadata]
 project = "formatrix-docs"
 version = "0.1.0"
-last-updated = "2026-03-15"
+last-updated = "2026-10-10"
 status = "active"
 
 [project-context]
 name = "formatrix-docs"
 completion-percentage = 0
 phase = "In development"
+
+[ecosystem]
+suite = "precision document suite"
+contract = "https://github.com/hyperpolymath/docmatrix/issues/71"
+inbound-notice = "https://github.com/hyperpolymath/formatrix-docs/issues/61"
+siblings = "docmatrix (conversion), blocky-writer (PDF placement), ForthWall (proposed, unbuilt)"
+long-form = "docs/ecosystem/ECOSYSTEM.adoc"

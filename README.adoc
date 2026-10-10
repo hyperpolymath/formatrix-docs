@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[MPL-2.0-or-later,link="https://opensource.org/licenses/MPL-2.0"]
-= DocMatrix
-image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=openssourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/hyperpolymath/formatrix-docs"]
+= Formatrix Docs
+image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=opensourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/hyperpolymath/formatrix-docs"]
 
 
 
@@ -20,17 +20,45 @@ This project must declare **MPL-2.0-or-later** for platform/tooling compatibilit
 
 Philosophy: **Palimpsest**. The MPL-2.0 (PMPL) text is provided in `license/MPL-2.0.txt`, and the canonical source is the palimpsest-license repository.
 
-Cross-platform document editor with format tabs (TXT/MD/ADOC/DJOT/ORG/RST/TYP). Gossamer GUI + Ada TUI. Graph visualization, OCR, TTS/STT, Nickel pipelines.
+Formatrix Docs is the tabbed viewer and editor of one logical document
+(TXT/MD/ADOC/DJOT/ORG/RST/TYP). Gossamer GUI + Ada TUI. Graph visualization,
+OCR, TTS/STT, and Nickel pipelines are in-tree capabilities of *this* project.
+Multi-format conversion is the separate
+https://github.com/hyperpolymath/docmatrix[DocMatrix] project; GUI, TUI, graph,
+and editor claims must not be attributed to DocMatrix.
 
 == Features
 
 * *Format Tabs* - View and edit the same document in multiple markup formats
-* *Unified AST* - Lossless conversion between formats
+* *Suite boundary* - Viewing/editing stays here; conversion is DocMatrix; PDF placement is Blocky Writer
+* *Unified AST* - Shared representation behind the format tabs
 * *GUI* - Gossamer with AffineScript frontend
 * *TUI* - Ada with AdaCurses for terminal usage
 * *Graph Visualization* - ArangoDB for document relationships
 * *Accessibility* - OCR, TTS, STT support
 * *Pipelines* - Nickel-based import/export transformations
+
+== Precision document suite
+
+Formatrix Docs owns exactly one thing: **tabbed viewing and editing of one
+logical document**. Synchronised editing across tabs is the intended
+progression.
+
+It deliberately does *not* do any of the following, and each has an owner:
+
+* Multi-format conversion and precision coordination — https://github.com/hyperpolymath/docmatrix[DocMatrix]
+* Fixed-layout PDF and application-form placement — https://github.com/hyperpolymath/blocky-writer[Blocky Writer]
+
+Viewer/editor behaviours such as cursor mapping, synchronised tabs, and
+undo/redo are proved here. Conversion round-trips are proved in DocMatrix.
+Page-coordinate geometry is proved in Blocky Writer. Those proof obligations
+do not transfer.
+
+The versioned composition contract is
+https://github.com/hyperpolymath/docmatrix/issues/71[docmatrix#71]. The
+long-form boundary statement — including the `detect_blocks` seam Blocky Writer
+emits, recorded so neither side invents it twice — is
+link:docs/ecosystem/ECOSYSTEM.adoc[docs/ecosystem/ECOSYSTEM.adoc].
 
 == Supported Formats
 
@@ -143,7 +171,10 @@ MPL-2.0 with Palimpsest philosophy.
 
 == Links
 
+* link:docs/ecosystem/ECOSYSTEM.adoc[Suite boundary (long form)]
 * link:.machine_readable/6a2/STATE.a2ml[Project State]
 * link:.machine_readable/6a2/ECOSYSTEM.a2ml[Ecosystem Position]
 * link:.machine_readable/6a2/META.a2ml[Architecture Decisions]
 * link:PALIMPSEST.adoc[Palimpsest Philosophy]
+* https://github.com/hyperpolymath/docmatrix[DocMatrix]
+* https://github.com/hyperpolymath/blocky-writer[Blocky Writer]

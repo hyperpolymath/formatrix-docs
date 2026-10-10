@@ -3,9 +3,15 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
 <!-- TOPOLOGY.md — Project architecture map and completion dashboard -->
-<!-- Last updated: 2026-02-19 -->
+<!-- Last updated: 2026-10-10 -->
 
-# DocMatrix (formatrix-docs) — Project Topology
+# Formatrix Docs — Project Topology
+
+This repository is the tabbed viewer/editor of one logical document.
+Conversion belongs to [DocMatrix](https://github.com/hyperpolymath/docmatrix);
+fixed-layout PDF placement belongs to
+[blocky-writer](https://github.com/hyperpolymath/blocky-writer).
+See `docs/ecosystem/ECOSYSTEM.adoc`.
 
 ## System Architecture
 
@@ -60,7 +66,7 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 CORE ENGINE (RUST)
-  Unified AST                       ██████████ 100%    Lossless conversion stable
+  Unified AST                       ██████████ 100%    Shared representation behind the format tabs
   Format Parsers (MD/ADOC/etc)      ████████░░  80%    Typst parser refining
   Nickel Pipeline Executor          ██████████ 100%    Transformations active
   ArangoDB Client                   ██████████ 100%    Document persistence stable

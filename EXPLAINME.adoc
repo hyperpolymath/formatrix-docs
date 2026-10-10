@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= DocMatrix — Show Me The Receipts
+= Formatrix Docs — Show Me The Receipts
 :toc:
 :icons: font
 
@@ -8,7 +8,7 @@ The README makes claims. This file backs them up.
 
 [quote, README]
 ____
-This project must declare **MPL-2.0-or-later** for platform/tooling compatibility.
+Formatrix Docs is the tabbed viewer and editor of one logical document.
 ____
 
 == Technology Choices
@@ -35,8 +35,27 @@ https://github.com/hyperpolymath/gossamer[gossamer].
 |===
 | Path | What's There
 
-| `src/` | Source code
+| `crates/formatrix-core/` | Unified AST, parsers, renderers (seven `SourceFormat`s)
 | `ffi/` | Foreign function interface
+| `docs/ecosystem/ECOSYSTEM.adoc` | Suite boundary vs DocMatrix and blocky-writer
+|===
+
+== Suite boundary
+
+[cols="1,2"]
+|===
+| Claim | Where it is checked
+
+| We are Formatrix Docs, not DocMatrix
+| `README.adoc` title and "Precision document suite" section;
+  `docs/ecosystem/ECOSYSTEM.adoc`
+
+| Viewing/editing stays here; PDF form placement stays in blocky-writer
+| https://github.com/hyperpolymath/formatrix-docs/issues/61[formatrix-docs#61];
+  `.machine_readable/integrations/blocky-writer.a2ml`
+
+| Proof obligations do not transfer
+| https://github.com/hyperpolymath/docmatrix/issues/71[docmatrix#71]
 |===
 
 == Questions?

@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: MPL-2.0
+# blocky-writer integration — detect_blocks seam
+# Recorded from hyperpolymath/formatrix-docs#61. Not an integration:
+# the neighbour declared the shape so neither side invents it twice.
+
+[integration]
+name = "blocky-writer"
+type = "suite-neighbour"
+repository = "https://github.com/hyperpolymath/blocky-writer"
+inbound-notice = "https://github.com/hyperpolymath/formatrix-docs/issues/61"
+contract = "https://github.com/hyperpolymath/docmatrix/issues/71"
+status = "boundary-declared"
+
+[boundary]
+they-own = "fixed-layout PDF and application-form placement"
+we-own = "tabbed viewing and editing of one logical document"
+integration-proposed = false
+
+[seam]
+name = "detect_blocks"
+owner = "hyperpolymath/blocky-writer"
+surface = "rust/pdftool_core (WASM export)"
+purpose = "If graph or relationship views show where in a document a value lands, consume this shape."
+coordinates = "PDF user space"
+label-resolution = "AcroForm field /T, else parent /T, else field_<page>_<index>"
+page-number-on-struct = false
+
+[seam.block]
+label = "string"
+x = "f32"
+y = "f32"
+width = "f32"
+height = "f32"
+
+[seam.example]
+json = "{ \"label\": \"Name\", \"x\": 50.0, \"y\": 700.0, \"width\": 200.0, \"height\": 24.0 }"
+
+[corpus]
+# Offered by #61; useful only if A2ML becomes a document tab (it is not one today).
+a2ml = "blocky-writer .machine_readable/ (STATE.a2ml, ECOSYSTEM.a2ml, CLADE.a2ml, contractiles)"
+asciidoc = "blocky-writer docs/ecosystem/ECOSYSTEM.adoc"
+markdown = "blocky-writer wiki/ (BerryWiki)"

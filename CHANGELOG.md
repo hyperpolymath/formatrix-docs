@@ -50,6 +50,7 @@ this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- docs: declare the precision-document-suite boundary (viewer/editor stays here; PDF placement is blocky-writer) (#61)
 - docs: add post-audit status report for M5 sweep
 - docs: add TEST-NEEDS.md (CRG C)
 - docs: add EXPLAINME.adoc — prove-it file backing README claims
