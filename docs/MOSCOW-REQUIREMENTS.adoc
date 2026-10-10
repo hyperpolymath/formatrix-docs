@@ -102,7 +102,7 @@ This document defines Must/Should/Could requirements for each component of the d
 |🔲 Pending
 
 |FD-S06
-|Print/export to PDF
+|Print/export to PDF (render of the logical document; AcroForm placement is blocky-writer — see `docs/ecosystem/ECOSYSTEM.adoc`)
 |🔲 Pending
 
 |FD-S07
@@ -137,7 +137,7 @@ This document defines Must/Should/Could requirements for each component of the d
 |ID |Requirement |Status
 
 |FD-C01
-|Graph view (document links visualization)
+|Graph view (document links visualization; page-coordinate overlays consume blocky-writer `detect_blocks` — formatrix-docs#61)
 |🔲 Pending
 
 |FD-C02
@@ -713,6 +713,17 @@ This document defines Must/Should/Could requirements for each component of the d
 |SEAM-5E
 |Connection pooling strategy
 |🔲 Pending
+|===
+
+=== Seam 6: Formatrix ↔ blocky-writer
+
+[cols="1,4,2",options="header"]
+|===
+|ID |Seam Requirement |Status
+
+|SEAM-6A
+|Consume blocky-writer `detect_blocks` shape (fields: label, x, y, width, height; PDF user space) if graph views show where a value lands. Shape recorded; no integration proposed (formatrix-docs#61).
+|⚪ Recorded
 |===
 
 == Ecosystem-Level Requirements (v1 Publish)

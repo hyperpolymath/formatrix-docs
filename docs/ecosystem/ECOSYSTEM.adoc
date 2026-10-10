@@ -1,0 +1,256 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Ecosystem position — Formatrix Docs
+:toc:
+:toc-placement: preamble
+:icons: font
+
+This file exists because of an acceptance criterion in
+https://github.com/hyperpolymath/docmatrix/issues/71[docmatrix#71]:
+
+[quote]
+____
+Each repository README and GitHub description states its own boundary and links
+to the other optional components.
+____
+
+It is the long-form version of the boundary statement in the README. The
+authoritative, versioned contract is docmatrix#71 itself — if the two disagree,
+docmatrix#71 wins and this file is the thing that is stale.
+
+https://github.com/hyperpolymath/formatrix-docs/issues/61[formatrix-docs#61]
+is the inbound notice from blocky-writer that this file answers. Nothing in
+that notice is blocking, and no integration is proposed. The work here is to
+state our own boundary so neither side reaches for the other's job, and to
+record one small seam so neither of us invents it twice.
+
+== What Formatrix Docs is
+
+The *tabbed viewer and editor* of one logical document. The same document is
+shown across format tabs; synchronised editing is the intended progression.
+
+Concretely, today: a Rust core (`crates/formatrix-core`) with a unified AST and
+seven `SourceFormat` handlers (TXT, Markdown, AsciiDoc, Djot, Org-mode,
+reStructuredText, Typst), a Gossamer GUI crate, an Ada TUI, and an ArangoDB
+client for document relationships. Cursor mapping, tab state, undo/redo, and
+the human editing surface are proved here or they are not proved.
+
+== What Formatrix Docs is not
+
+* *Not a conversion engine.* Multi-format conversion and precision
+  coordination is https://github.com/hyperpolymath/docmatrix[DocMatrix].
+  Round-trip tests live there; a green editor test here does not prove them.
+* *Not a fixed-layout PDF or application-form placer.* Fitting content into
+  boxes, baselines and per-character cells designed for hand spacing is
+  https://github.com/hyperpolymath/blocky-writer[blocky-writer]. Page geometry
+  is theirs. Print/export of the logical document (FD-S06), if implemented, is
+  a *render* of our AST — not AcroForm writeback.
+* *Not an OCR or extraction pipeline.* Document extraction at pipeline scale
+  (OCR, NER, metadata) is https://github.com/hyperpolymath/docudactyl[Docudactyl].
+  In-tree Tesseract as an accessibility aid (FD-C02) is a viewer convenience,
+  not that pipeline.
+* *Not a print router.* That is https://github.com/hyperpolymath/presswerk[Presswerk].
+  Print/export of the logical document (FD-S06) is a render of our AST, not
+  form writeback and not print routing.
+* *Not a cross-document consistency reconciler.* That is
+  https://github.com/hyperpolymath/recon-silly-ation[recon-silly-ation].
+* *Not ForthWall.* ForthWall is a proposed, unbuilt, capability-bounded
+  execution layer. It is never a mandatory end-user product.
+
+== The suite
+
+[cols="1,2,2",options="header"]
+|===
+| Project | Owns | Repo
+
+| Formatrix Docs
+| Tabbed viewing/editing of one logical document
+| https://github.com/hyperpolymath/formatrix-docs[this repo]
+
+| DocMatrix
+| Multi-format conversion and precision coordination for the suite
+| https://github.com/hyperpolymath/docmatrix[hyperpolymath/docmatrix]
+
+| blocky-writer
+| Fixed-layout PDF and application-form placement
+| https://github.com/hyperpolymath/blocky-writer[hyperpolymath/blocky-writer]
+
+| ForthWall
+| Optional capability-bounded execution layer for critical operations
+  (_proposed, not implemented_)
+| —
+|===
+
+== Adjacent, not in the suite
+
+These are separate projects with their own boundaries. They are listed because
+Formatrix Docs plausibly touches them, not because anyone has agreed a contract.
+
+[cols="1,2,2",options="header"]
+|===
+| Project | Why it is adjacent | Repo
+
+| AffineScript
+| The language `ui/src` targets.
+| https://github.com/hyperpolymath/affinescript[hyperpolymath/affinescript]
+
+| recon-silly-ation
+| Cross-document consistency reconciler. Existing seams are in
+  link:../SEAM-CHECK-MUSTS.adoc[SEAM-CHECK-MUSTS.adoc] (SEAM-1).
+| https://github.com/hyperpolymath/recon-silly-ation[hyperpolymath/recon-silly-ation]
+
+| Docudactyl
+| OCR, NER and metadata extraction — a plausible future source of
+  document-link labels for the graph view (FD-C01).
+| https://github.com/hyperpolymath/docudactyl[hyperpolymath/docudactyl]
+
+| Presswerk
+| High-assurance local print routing; downstream of a *rendered* PDF, not of
+  form placement.
+| https://github.com/hyperpolymath/presswerk[hyperpolymath/presswerk]
+
+| gv-clade-index
+| Taxonomy registry. `.machine_readable/CLADE.a2ml` registers this repo there.
+| https://github.com/hyperpolymath/gv-clade-index[hyperpolymath/gv-clade-index]
+
+| deed-ecosystem / standards
+| Governance and the `.deed` manifest format.
+| https://github.com/hyperpolymath/deed-ecosystem[deed-ecosystem] /
+  https://github.com/hyperpolymath/standards[standards]
+
+| BerryWiki
+| The format blocky-writer used to seed its project wiki; listed because
+  formatrix-docs#61 offered those pages as ordinary Markdown test material.
+| https://github.com/metadatastician/berrywiki[metadatastician/berrywiki]
+|===
+
+== The `detect_blocks` seam
+
+blocky-writer's `detect_blocks` (Rust/WASM, `rust/pdftool_core`) returns, per
+widget annotation:
+
+[source,json]
+----
+{ "label": "Name", "x": 50.0, "y": 700.0, "width": 200.0, "height": 24.0 }
+----
+
+The corresponding Rust type is:
+
+[source,rust]
+----
+pub struct Block {
+    pub label: String,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+----
+
+`label` comes from the AcroForm field's `/T`, falling back to the parent
+field's `/T`, falling back to `field_<page>_<index>`. Coordinates are PDF
+user space. There is no page number on the public struct.
+
+If the graph or relationship views (FD-C01) ever want to show *where* in a
+document a value lands, that is the shape we consume. We are not building that
+overlay in this change. The point of recording the shape is that neither side
+invents a second, incompatible one.
+
+A machine-readable copy of this seam lives at
+link:../../.machine_readable/integrations/blocky-writer.a2ml[`.machine_readable/integrations/blocky-writer.a2ml`].
+
+== Formats: implemented vs intended
+
+Honesty about tabs, because neighbouring READMEs have drifted.
+
+Implemented `SourceFormat` variants in `crates/formatrix-core` (these are the
+only formats the AST, parsers and renderers actually handle):
+
+[cols="1,2",options="header"]
+|===
+| Format | Notes
+
+| TXT | Plain text
+| MD | Markdown (CommonMark)
+| ADOC | AsciiDoc
+| DJOT | Djot
+| ORG | Org-mode
+| RST | reStructuredText
+| TYP | Typst
+|===
+
+Named in neighbouring product copy (docmatrix#71, the GitHub description, or
+blocky-writer's boundary statement) but *not* a `SourceFormat` today:
+
+[cols="1,2",options="header"]
+|===
+| Representation | Status here
+
+| Delimiter-selected tabular text
+| Intended tab; no handler.
+
+| A2ML
+| Used as machine-readable *project* metadata under `.machine_readable/`.
+  Not a document tab. There is no A2ML parser in `formatrix-core`.
+
+| DEED (`.deed`)
+| Estate manifest format. Not a document tab.
+|===
+
+=== A2ML corpus from blocky-writer
+
+formatrix-docs#61 noted that if A2ML support were a parser rather than a
+passthrough, blocky-writer's `.machine_readable/` files would be a small but
+structurally varied real-world corpus: `STATE.a2ml`, `ECOSYSTEM.a2ml`,
+`CLADE.a2ml`, and the contractiles. That offer stands. It does not change the
+fact that we currently store A2ML, we do not parse it as a document.
+
+=== AsciiDoc test material
+
+If we want ordinary AsciiDoc fixtures with no exotic constructs,
+blocky-writer's `docs/ecosystem/ECOSYSTEM.adoc` and its `wiki/` pages
+(BerryWiki Markdown) are the two files #61 pointed at.
+
+== The composition contract (summary)
+
+From docmatrix#71. Formatrix Docs is a party to all eight clauses. The ones
+this project is most likely to break are 1 (native input stays authoritative
+across tabs) and 4 (no silent normalisation of document structure):
+
+[quote]
+____
+No component silently normalises punctuation, Unicode/whitespace, attribution,
+terminology, document structure, or page geometry.
+____
+
+Page geometry is *not* ours to normalise, or to own. Document structure across
+tabs *is* ours, and rewriting it "to be helpful" while switching representations
+is precisely the failure the contract forbids.
+
+== Proof obligations do not transfer
+
+* Conversion round-trip tests do not prove synchronised editor state.
+* Editor tests do not prove fixed-layout PDF geometry.
+* Exact page coordinates do not prove semantic correctness.
+* Deterministic Forth execution does not prove the chosen operation or location
+  was correct.
+
+A green badge on a neighbour is not evidence about this repository, and this
+repository's green `cargo test` is not evidence about a neighbour's.
+
+== How cross-repo communication works here
+
+There is no standing integration programme and none is planned. The working
+pattern is deliberately light:
+
+. Each repo states its own boundary in its README and links the others.
+. When a repo's status changes in a way that unblocks or affects a neighbour,
+  it files a short issue on that neighbour saying what changed and what the
+  neighbour can now progress with or consume.
+. The neighbour decides whether to act. Nothing is merged across repos.
+
+formatrix-docs#61 is an instance of step 2. This file is the instance of
+step 3 that records the boundary without building the seam.
+
+If you are about to build something that belongs to a project in the tables
+above, stop and check that project's README and open issues first.

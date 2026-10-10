@@ -16,5 +16,6 @@ See README.adoc for overview.
 
 ## Quick Context
 - License: MPL-2.0
-- Part of hyperpolymath ecosystem
+- Tabbed viewer/editor of one logical document (not DocMatrix, not blocky-writer)
+- Suite boundary: `docs/ecosystem/ECOSYSTEM.adoc`
 - See EXPLAINME.adoc for architecture

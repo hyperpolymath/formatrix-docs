@@ -1,6 +1,11 @@
 # SPDX-License-Identifier: MPL-2.0
 # ECOSYSTEM.a2ml — Ecosystem position
 # Converted from ECOSYSTEM.scm on 2026-03-15
+# Expanded 2026-10-10 to carry the suite boundary, so machine readers get it
+# without parsing prose. The authoritative, versioned contract is
+# https://github.com/hyperpolymath/docmatrix/issues/71 — if this file and that
+# issue disagree, the issue wins and this file is stale.
+# Inbound notice: https://github.com/hyperpolymath/formatrix-docs/issues/61
 
 [metadata]
 project = "formatrix-docs"
@@ -8,3 +13,51 @@ ecosystem = "hyperpolymath"
 
 [position]
 type = "component"
+suite = "precision document suite"
+contract = "https://github.com/hyperpolymath/docmatrix/issues/71"
+contract-owner = "hyperpolymath/docmatrix"
+
+[boundary]
+owns = "tabbed viewing and editing of one logical document across format tabs; synchronised editing is the intended progression"
+does-not-own = [
+  "multi-format conversion and precision coordination — hyperpolymath/docmatrix",
+  "fixed-layout PDF and application-form placement — hyperpolymath/blocky-writer",
+  "OCR, NER and metadata extraction — hyperpolymath/docudactyl",
+  "print routing — hyperpolymath/presswerk",
+  "cross-document consistency reconciliation — hyperpolymath/recon-silly-ation",
+  "capability-bounded critical execution — ForthWall, proposed and unbuilt",
+]
+hard-constraint = "never silently normalise document structure across tabs — composition contract clause 4; page geometry is not ours"
+
+[suite]
+docmatrix = "multi-format conversion and precision coordination"
+formatrix-docs = "tabbed multi-format viewing and editing (this repo)"
+blocky-writer = "fixed-layout PDF and application-form placement"
+forthwall = "proposed capability-bounded execution layer — not implemented"
+
+[seam.detect-blocks]
+owner = "hyperpolymath/blocky-writer"
+notice = "https://github.com/hyperpolymath/formatrix-docs/issues/61"
+shape = "{ label, x, y, width, height }"
+coordinates = "PDF user space"
+consumed-by = "optional future graph/relationship overlay (FD-C01); not implemented"
+integration-proposed = false
+
+[formats]
+implemented = ["txt", "md", "adoc", "djot", "org", "rst", "typ"]
+not-a-tab-today = ["tabular-text", "a2ml", "deed"]
+a2ml-role = "machine-readable project metadata under .machine_readable/; not a SourceFormat"
+
+[adjacent]
+affinescript = "hyperpolymath/affinescript — frontend language"
+recon-silly-ation = "hyperpolymath/recon-silly-ation — cross-document reconciler; SEAM-1"
+docudactyl = "hyperpolymath/docudactyl — OCR/NER/metadata extraction"
+presswerk = "hyperpolymath/presswerk — print routing, downstream of a rendered PDF"
+gv-clade-index = "hyperpolymath/gv-clade-index — taxonomy registry; CLADE.a2ml registered here"
+deed-ecosystem = "hyperpolymath/deed-ecosystem — .deed manifest format"
+standards = "hyperpolymath/standards — estate governance"
+
+[communication]
+norm = "each repo states its own boundary in its README and links the others; a short issue is filed on a neighbour when a status change unblocks or affects it"
+no-standing-integration-programme = true
+long-form = "docs/ecosystem/ECOSYSTEM.adoc"
