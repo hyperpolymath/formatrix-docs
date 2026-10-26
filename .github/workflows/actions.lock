@@ -14,15 +14,15 @@ workflows:
         - 'haskell-actions/setup@f9150cb1d140e9a9271700670baa38991e6fa25c'
     '.github/workflows/cflite_batch.yml':
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-        - 'github/codeql-action@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee'
+        - 'github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
         - 'google/clusterfuzzlite@884713a6c30a92e5e8544c39945cd7cb630abcd1'
     '.github/workflows/cflite_pr.yml':
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-        - 'github/codeql-action@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee'
+        - 'github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
         - 'google/clusterfuzzlite@884713a6c30a92e5e8544c39945cd7cb630abcd1'
     '.github/workflows/codeql.yml':
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-        - 'github/codeql-action@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee'
+        - 'github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
     '.github/workflows/dogfood-gate.yml':
         - 'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5'
         - 'hyperpolymath/deed-ecosystem@aa4b836bd969df2bc58128cb8e3d20bbc88d5e79'
@@ -32,7 +32,7 @@ workflows:
         - 'actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3'
         - 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         - 'erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124'
-        - 'github/codeql-action@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee'
+        - 'github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
     '.github/workflows/instant-sync.yml':
         - 'peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697'
     '.github/workflows/mirror.yml':
@@ -125,9 +125,9 @@ dependencies:
         commit: 'sha1-54075bcc5e249e4758d363f27d099f55d843f124'
         owner_id: 47606891
         repo_id: 331103973
-    'github/codeql-action@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee':
-        ref: 'v4.39.0'
-        commit: 'sha1-6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee'
+    'github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370':
+        ref: 'v4.39.1'
+        commit: 'sha1-9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
         owner_id: 9919
         repo_id: 259445878
     'google/clusterfuzzlite@884713a6c30a92e5e8544c39945cd7cb630abcd1':
