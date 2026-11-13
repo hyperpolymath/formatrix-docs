@@ -24,9 +24,9 @@ workflows:
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
         - 'github/codeql-action@33d7b85da1a04171e211befe2c739303b9a4c066'
     '.github/workflows/dogfood-gate.yml':
-        - 'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5'
-        - 'hyperpolymath/deed-ecosystem@aa4b836bd969df2bc58128cb8e3d20bbc88d5e79'
-        - 'hyperpolymath/k9-ecosystem@89f3c2702f4f650a92aa7411502f38da06abd562'
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'hyperpolymath/deed-ecosystem@4cb8886be67cf0d67e150679d1213ea519c3806f'
+        - 'hyperpolymath/k9-ecosystem@20f6be5b5a14a48680b236955b5c4ad9033d00d4'
     '.github/workflows/hypatia-scan.yml':
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
         - 'actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3'
@@ -54,11 +54,6 @@ dependencies:
     'actions/checkout@11d5960a326750d5838078e36cf38b85af677262':
         ref: 'v4.4.0'
         commit: 'sha1-11d5960a326750d5838078e36cf38b85af677262'
-        owner_id: 44036562
-        repo_id: 197814629
-    'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5':
-        ref: 'v4.3.1'
-        commit: 'sha1-34e114876b0b11c390a56381ad16ebd13914f8d5'
         owner_id: 44036562
         repo_id: 197814629
     'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1':
@@ -140,14 +135,14 @@ dependencies:
         commit: 'sha1-f9150cb1d140e9a9271700670baa38991e6fa25c'
         owner_id: 75048950
         repo_id: 623796603
-    'hyperpolymath/deed-ecosystem@aa4b836bd969df2bc58128cb8e3d20bbc88d5e79':
+    'hyperpolymath/deed-ecosystem@4cb8886be67cf0d67e150679d1213ea519c3806f':
         ref: 'main'
-        commit: 'sha1-aa4b836bd969df2bc58128cb8e3d20bbc88d5e79'
+        commit: 'sha1-4cb8886be67cf0d67e150679d1213ea519c3806f'
         owner_id: 6759885
         repo_id: 1275649586
-    'hyperpolymath/k9-ecosystem@89f3c2702f4f650a92aa7411502f38da06abd562':
+    'hyperpolymath/k9-ecosystem@20f6be5b5a14a48680b236955b5c4ad9033d00d4':
         ref: 'main'
-        commit: 'sha1-89f3c2702f4f650a92aa7411502f38da06abd562'
+        commit: 'sha1-20f6be5b5a14a48680b236955b5c4ad9033d00d4'
         owner_id: 6759885
         repo_id: 1275650185
     'hyperpolymath/smtp-notify-action@e384daf6167a7a7567642d6a62060106244d2413':
